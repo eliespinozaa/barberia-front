@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useRef, useEffect, useMemo } from 'react';
 import {
   View, Text, TextInput, TouchableOpacity,
   Switch, ScrollView, KeyboardAvoidingView, Platform,
@@ -9,9 +9,25 @@ import { authAPI } from '../../config/api';
 import ToastAlert from '../../components/ToastAlert';
 import { useTheme } from '../../context/ThemeContext';
 import { useWindowDimensions } from 'react-native';
+import { Animated, LayoutAnimation, UIManager } from 'react-native';
 import createStyles from '../../styles/common/RegisterStyles';
 
+if (Platform.OS === 'android' && UIManager.setLayoutAnimationEnabledExperimental) {
+  UIManager.setLayoutAnimationEnabledExperimental(true);
+}
 
+const RequirementItem = ({ met, label, styles }) => (
+  <View style={styles.requirementItem}>
+    <Ionicons
+      name={met ? 'checkmark-circle' : 'ellipse-outline'}
+      size={14}
+      color={met ? '#22C55E' : '#999'}
+    />
+    <Text style={[styles.requirementText, met && styles.requirementTextMet]}>
+      {label}
+    </Text>
+  </View>
+);
 const RegisterScreen = ({ navigation }) => {
   const { width } = useWindowDimensions();
   const { theme } = useTheme();
@@ -28,6 +44,41 @@ const RegisterScreen = ({ navigation }) => {
   const [loading, setLoading]             = useState(false);
   const [toast, setToast]                 = useState({ visible: false, type: 'info', message: '' }); // ← aquí adentro
 
+const cardAnim = useRef(new Animated.Value(0)).current;
+
+useEffect(() => {
+  Animated.timing(cardAnim, {
+    toValue: 1,
+    duration: 450,
+    useNativeDriver: true,
+  }).start();
+}, []);
+
+const passwordChecks = {
+  length:    password.length >= 8,
+  uppercase: /[A-Z]/.test(password),
+  number:    /[0-9]/.test(password),
+  special:   /[^A-Za-z0-9]/.test(password),
+};
+
+const strengthScore = Object.values(passwordChecks).filter(Boolean).length;
+
+const strengthInfo = useMemo(() => {
+  if (!password) return { label: '', color: '#D8D8D8', width: '0%' };
+  if (strengthScore <= 1) return { label: 'Débil',   color: '#EF4444', width: '25%' };
+  if (strengthScore === 2) return { label: 'Regular', color: '#F59E0B', width: '50%' };
+  if (strengthScore === 3) return { label: 'Buena',   color: '#3B82F6', width: '75%' };
+  return { label: 'Fuerte', color: '#22C55E', width: '100%' };
+}, [password, strengthScore]);
+
+const passwordsMatch = confirmPassword.length > 0 && password === confirmPassword;
+
+useEffect(() => {
+  LayoutAnimation.configureNext(LayoutAnimation.Presets.easeInEaseOut);
+}, [password, confirmPassword]);
+
+
+
   const showToast = (type, message, duration = 3000) => { // ← aquí adentro
     setToast({ visible: true, type, message });
     if (type !== 'loading') {
@@ -40,6 +91,10 @@ const RegisterScreen = ({ navigation }) => {
       showToast('error', 'Completa todos los campos');
       return;
     }
+    if (strengthScore < 3) {
+  showToast('error', 'Tu contraseña es muy débil, agrégale más variedad');
+  return;
+}
     if (password !== confirmPassword) {
       showToast('error', 'Las contraseñas no coinciden');
       return;
@@ -109,76 +164,131 @@ const RegisterScreen = ({ navigation }) => {
               <Text style={styles.title}>Registrate</Text>
             </View>
 
-            <View style={styles.card}>
-              <View style={styles.formGrid}>
+             
+<Animated.View
+  style={[
+    styles.card,
+    {
+      opacity: cardAnim,
+      transform: [
+        {
+          translateY: cardAnim.interpolate({
+            inputRange: [0, 1],
+            outputRange: [20, 0],
+          }),
+        },
+      ],
+    },
+  ]}
+>
+  <View style={styles.formGrid}>
 
-                <View style={styles.column}>
-                  <Text style={styles.label}>Nombre completo</Text>
-                  <View style={styles.inputRow}>
-                    <TextInput style={styles.input} placeholder="Nombre completo"
-                      placeholderTextColor="#999" value={nombre} onChangeText={setNombre} />
-                  </View>
-                </View>
+    <View style={styles.column}>
+      <Text style={styles.label}>Nombre completo</Text>
+      <View style={styles.inputRow}>
+        <TextInput style={styles.input} placeholder="Nombre completo"
+          placeholderTextColor="#999" value={nombre} onChangeText={setNombre} />
+      </View>
+    </View>
 
-                <View style={styles.column}>
-                  <Text style={styles.label}>Correo</Text>
-                  <View style={styles.inputRow}>
-                    <TextInput style={styles.input} placeholder="tu@correo.com"
-                      placeholderTextColor="#999" value={correo} onChangeText={setCorreo}
-                      keyboardType="email-address" autoCapitalize="none" />
-                  </View>
-                </View>
+    <View style={styles.column}>
+      <Text style={styles.label}>Correo</Text>
+      <View style={styles.inputRow}>
+        <TextInput style={styles.input} placeholder="tu@correo.com"
+          placeholderTextColor="#999" value={correo} onChangeText={setCorreo}
+          keyboardType="email-address" autoCapitalize="none" />
+      </View>
+    </View>
 
-                <View style={styles.column}>
-                  <Text style={styles.label}>Teléfono</Text>
-                  <View style={styles.inputRow}>
-                    <TextInput style={styles.input} placeholder="10 dígitos"
-                      placeholderTextColor="#999" value={telefono} onChangeText={setTelefono}
-                      keyboardType="phone-pad" />
-                  </View>
-                </View>
+    <View style={styles.column}>
+      <Text style={styles.label}>Teléfono</Text>
+      <View style={styles.inputRow}>
+        <TextInput style={styles.input} placeholder="10 dígitos"
+          placeholderTextColor="#999" value={telefono} onChangeText={setTelefono}
+          keyboardType="phone-pad" />
+      </View>
+    </View>
 
-                <View style={styles.column}>
-                  <Text style={styles.label}>Nueva Contraseña</Text>
-                  <View style={styles.inputRow}>
-                    <TextInput style={styles.input} placeholder="••••••••"
-                      placeholderTextColor="#999" secureTextEntry={!showPass}
-                      value={password} onChangeText={setPassword} />
-                    <TouchableOpacity onPress={() => setShowPass(!showPass)} style={styles.eyeBtn}>
-                      <Ionicons name={showPass ? 'eye-outline' : 'eye-off-outline'} size={18} color="#555" />
-                    </TouchableOpacity>
-                  </View>
-                </View>
+    <View style={styles.column}>
+      <Text style={styles.label}>Nueva Contraseña</Text>
+      <View style={styles.inputRow}>
+        <TextInput style={styles.input} placeholder="••••••••"
+          placeholderTextColor="#999" secureTextEntry={!showPass}
+          value={password} onChangeText={setPassword} />
+        <TouchableOpacity onPress={() => setShowPass(!showPass)} style={styles.eyeBtn}>
+          <Ionicons name={showPass ? 'eye-outline' : 'eye-off-outline'} size={18} color="#555" />
+        </TouchableOpacity>
+      </View>
 
-                <View style={styles.column}>
-                  <Text style={styles.label}>Estatus</Text>
-                  <View style={styles.switchContainer}>
-                    <Switch value={estatus} onValueChange={setEstatus} />
-                  </View>
-                </View>
-
-                <View style={styles.column}>
-                  <Text style={styles.label}>Confirmar Contraseña</Text>
-                  <View style={styles.inputRow}>
-                    <TextInput style={styles.input} placeholder="••••••••"
-                      placeholderTextColor="#999" secureTextEntry={!showConfirmPass}
-                      value={confirmPassword} onChangeText={setConfirmPassword} />
-                    <TouchableOpacity onPress={() => setShowConfirmPass(!showConfirmPass)} style={styles.eyeBtn}>
-                      <Ionicons name={showConfirmPass ? 'eye-outline' : 'eye-off-outline'} size={18} color="#555" />
-                    </TouchableOpacity>
-                  </View>
-                </View>
-
-              </View>
-
-              <TouchableOpacity
-                style={[styles.btn, loading && { opacity: 0.6 }]}
-                onPress={handleRegister}
-                disabled={loading}
-              >
-                <Text style={styles.btnText}>{loading ? 'Registrando...' : 'Registrarse'}</Text>
-              </TouchableOpacity>
+      {password.length > 0 && (
+        <>
+          <View style={styles.strengthWrap}>
+            <View style={styles.strengthBarTrack}>
+              <View
+                style={[
+                  styles.strengthBarFill,
+                  { width: strengthInfo.width, backgroundColor: strengthInfo.color },
+                ]}
+              />
             </View>
+            <Text style={[styles.strengthLabel, { color: strengthInfo.color }]}>
+              {strengthInfo.label}
+            </Text>
+          </View>
+
+          <View style={styles.requirementsGrid}>
+            <RequirementItem styles={styles} met={passwordChecks.length}    label="8+ caracteres" />
+            <RequirementItem styles={styles} met={passwordChecks.uppercase} label="Una mayúscula" />
+            <RequirementItem styles={styles} met={passwordChecks.number}    label="Un número" />
+            <RequirementItem styles={styles} met={passwordChecks.special}   label="Un carácter especial" />
+          </View>
+        </>
+      )}
+    </View>
+
+    <View style={styles.column}>
+      <Text style={styles.label}>Estatus</Text>
+      <View style={styles.switchContainer}>
+        <Switch value={estatus} onValueChange={setEstatus} />
+      </View>
+    </View>
+
+    <View style={styles.column}>
+      <Text style={styles.label}>Confirmar Contraseña</Text>
+      <View style={styles.inputRow}>
+        <TextInput style={styles.input} placeholder="••••••••"
+          placeholderTextColor="#999" secureTextEntry={!showConfirmPass}
+          value={confirmPassword} onChangeText={setConfirmPassword} />
+        <TouchableOpacity onPress={() => setShowConfirmPass(!showConfirmPass)} style={styles.eyeBtn}>
+          <Ionicons name={showConfirmPass ? 'eye-outline' : 'eye-off-outline'} size={18} color="#555" />
+        </TouchableOpacity>
+      </View>
+
+      {confirmPassword.length > 0 && (
+        <View style={styles.matchRow}>
+          <Ionicons
+            name={passwordsMatch ? 'checkmark-circle' : 'close-circle'}
+            size={14}
+            color={passwordsMatch ? '#22C55E' : '#EF4444'}
+          />
+          <Text style={[styles.matchText, { color: passwordsMatch ? '#22C55E' : '#EF4444' }]}>
+            {passwordsMatch ? 'Las contraseñas coinciden' : 'No coinciden todavía'}
+          </Text>
+        </View>
+      )}
+    </View>
+
+  </View>
+
+  <TouchableOpacity
+    style={[styles.btn, loading && { opacity: 0.6 }]}
+    onPress={handleRegister}
+    disabled={loading}
+  >
+    <Text style={styles.btnText}>{loading ? 'Registrando...' : 'Registrarse'}</Text>
+  </TouchableOpacity>
+</Animated.View>
+             
           </View>
         </ScrollView>
       </KeyboardAvoidingView>

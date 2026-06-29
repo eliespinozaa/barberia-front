@@ -167,6 +167,59 @@ const createStyles = (width, theme) => {
       fontWeight:    '700',
       letterSpacing: 0.2,
     },
+    strengthWrap: {
+  flexDirection: 'row',
+  alignItems:    'center',
+  gap:           8,
+  marginTop:     8,
+},
+strengthBarTrack: {
+  flex:            1,
+  height:          6,
+  borderRadius:    3,
+  backgroundColor: '#E0E0E0',
+  overflow:        'hidden',
+},
+strengthBarFill: {
+  height:       '100%',
+  borderRadius: 3,
+},
+strengthLabel: {
+  fontSize:   12,
+  fontWeight: '700',
+  minWidth:   55,
+  textAlign:  'right',
+},
+requirementsGrid: {
+  flexDirection: 'row',
+  flexWrap:      'wrap',
+  marginTop:     8,
+  gap:           6,
+},
+requirementItem: {
+  flexDirection: 'row',
+  alignItems:    'center',
+  gap:           4,
+  width:         '48%',
+},
+requirementText: {
+  fontSize:   11,
+  color:      '#999',
+  fontWeight: '600',
+},
+requirementTextMet: {
+  color: '#22C55E',
+},
+matchRow: {
+  flexDirection: 'row',
+  alignItems:    'center',
+  gap:           6,
+  marginTop:     6,
+},
+matchText: {
+  fontSize:   12,
+  fontWeight: '600',
+},
   });
 };
 

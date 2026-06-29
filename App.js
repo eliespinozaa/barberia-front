@@ -19,6 +19,14 @@ import SuperAdminHomeScreen from './screens/superadmin/SuperAdminHomeScreen';
 import BarberHomeScreen from './screens/barber/BarberHomeScreen';
 import BarberiasScreen from './screens/superadmin/BarberiasScreen';
 import BarberiasNuevaScreen from './screens/superadmin/BarberiasNuevaScreen';
+import DetalleBarberiaScreen from './screens/superadmin/DetalleBarberiaScreen';
+import EditarBarberoScreen from './screens/superadmin/EditarBarberoScreen';
+import EditarServicioScreen from './screens/superadmin/EditarServicioScreen';
+import UsuariosScreen from './screens/superadmin/UsuariosScreen';
+
+
+
+
 
 
 
@@ -129,6 +137,14 @@ export default function App() {
 <Stack.Screen name="BarberHomeScreen"   component={BarberHomeScreen}   options={{ gestureEnabled: false }} />
 <Stack.Screen name="BarberiasScreen"    component={BarberiasScreen}    options={{ gestureEnabled: false }} />
 <Stack.Screen name="BarberiasNuevaScreen" component={BarberiasNuevaScreen} options={{ gestureEnabled: false }} />
+<Stack.Screen name="DetalleBarberiaScreen" component={DetalleBarberiaScreen} options={{ gestureEnabled: false }} />
+<Stack.Screen name="EditarBarberoScreen" component={EditarBarberoScreen} options={{ gestureEnabled: false }} />
+<Stack.Screen name="EditarServicioScreen" component={EditarServicioScreen} options={{ gestureEnabled: false }} />
+<Stack.Screen name="UsuariosScreen" component={UsuariosScreen} options={{ gestureEnabled: false }} />
+
+
+
+
           </Stack.Navigator>
         </NavigationContainer>
       </SafeAreaProvider>

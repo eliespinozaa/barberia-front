@@ -33,14 +33,15 @@ const createStyles = (width, theme) => {
       position:          'relative',
     },
     backBtn: {
-      position:        'absolute',
-      left:            isSmall ? 16 : 28,
-      width:           40,
-      height:          40,
-      borderRadius:    20,
-      justifyContent:  'center',
-      alignItems:      'center',
-    },
+  position:        'absolute',
+  left:            isSmall ? 16 : 28,
+  width:           40,
+  height:          40,
+  borderRadius:    20,
+  backgroundColor: 'rgba(255,255,255,0.12)', 
+  justifyContent:  'center',
+  alignItems:      'center',
+},
     headerPill: {
       backgroundColor:   '#FFFFFF',
       borderRadius:      24,
@@ -86,33 +87,40 @@ const createStyles = (width, theme) => {
       ...(Platform.OS === 'web' && { outlineStyle: 'none' }),
     },
 
-    /* ── Filtros ── */
-    filtersRow: {
-      flexDirection: 'row',
-      flexWrap:      'wrap',
-      gap:           isSmall ? 10 : 16,
-      marginBottom:  22,
-      alignItems:    'center',
-    },
+   filtersRow: {
+  flexDirection: isSmall ? 'column' : 'row',  
+  flexWrap:      isSmall ? 'nowrap' : 'wrap',
+  width:         '100%',                        
+  gap:           isSmall ? 10 : 16,
+  marginBottom:  22,
+  alignItems:    isSmall ? 'stretch' : 'center', 
+  zIndex:        1,
+},
+filtersRowOpen: {
+  zIndex:    999,          
+  elevation: 20,            
+},
     filterGroup: {
-      flexDirection: 'row',
-      alignItems:    'center',
-      gap:           8,
-    },
+  flexDirection: 'row',
+  alignItems:    'center',
+  gap:           8,
+},
     filterLabel: {
       color:      WHITE,
       fontSize:   13,
       fontWeight: '600',
     },
-    filterPill: {
-      flexDirection:     'row',
-      alignItems:        'center',
-      backgroundColor:   '#FFFFFF',
-      borderRadius:      18,
-      paddingHorizontal: 14,
-      paddingVertical:   7,
-      gap:               6,
-    },
+  filterPill: {
+  flexDirection:     'row',
+  alignItems:        'center',
+  justifyContent:    isSmall ? 'space-between' : 'flex-start',  
+  backgroundColor:   '#FFFFFF',
+  borderRadius:      18,
+  paddingHorizontal: 14,
+  paddingVertical:   7,
+  gap:               6,
+  flex:              isSmall ? 1 : undefined, 
+},
     filterPillText: {
       color:      '#1A1A1A',
       fontSize:   13,
@@ -177,17 +185,15 @@ const createStyles = (width, theme) => {
       backgroundColor: DANGER_RED,
     },
 
-    /* ── Acciones de la card ── */
+   /* ── Acciones de la card ── */
     cardActions: {
       flexDirection: 'row',
-      gap:           10,
-      marginTop:     14,
+      gap:           22,
+      marginTop:     16,
     },
     cardActionBtn: {
-      width:           38,
-      height:          38,
-      borderRadius:    19,
-      backgroundColor: ICON_BTN_BG,
+      width:           36,
+      height:          36,
       justifyContent:  'center',
       alignItems:      'center',
     },
@@ -232,6 +238,7 @@ const createStyles = (width, theme) => {
     /* ── Dropdowns de filtro (reutiliza patrón del dropdown del Home) ── */
     dropdownMenu: {
       position:        'absolute',
+       top:             '100%', 
       backgroundColor: '#0B1014',
       borderRadius:    12,
       paddingVertical: 6,
@@ -325,12 +332,37 @@ const createStyles = (width, theme) => {
       fontSize:   13,
       fontWeight: '700',
     },
+    dropdownMenuInline: {
+  backgroundColor: '#0B1014',
+  borderRadius:    12,
+  paddingVertical: 6,
+  marginBottom:    18,
+  borderWidth:     1,
+  borderColor:     'rgba(255,255,255,0.08)',
+  ...(isWeb && { boxShadow: '0px 8px 24px rgba(0,0,0,0.5)' }),
+},
+filterGroup: {
+  flexDirection: 'row',
+  alignItems:    'center',
+  gap:           8,
+  width:         isSmall ? '100%' : 'auto',    
+  justifyContent: isSmall ? 'space-between' : 'flex-start',
+},
+filterGroupOpen: {
+  zIndex:    999,           // entre los 3 pills entre sí
+  elevation: 20,
+},
   });
 };
 
 export const getPlaceholderColor = (theme) => {
   const isDark = theme.mode === 'dark';
   return isDark ? 'rgba(255,255,255,0.35)' : 'rgba(0,0,0,0.35)';
+};
+
+export const getIconColor = (theme) => {
+  const isDark = theme.mode === 'dark';
+  return isDark ? '#FFFFFF' : '#1A1A1A';
 };
 
 export default createStyles;

@@ -13,10 +13,10 @@ import { tokenManager } from '../../config/api';
 import createStyles from '../../styles/superadmin/SuperAdminHomeStyles';
 
 const SIDEBAR_ITEMS = [
-  { label: 'Inicio',      icon: 'home-outline',    active: true },
-  { label: 'Barberías',   icon: 'storefront-outline' },
-  { label: 'Usuarios',    icon: 'people-outline' },
-  { label: 'Membresias',  icon: 'card-outline' },
+  { label: 'Inicio',      icon: 'home-outline',      screen: null },
+  { label: 'Barberías',   icon: 'storefront-outline', screen: 'BarberiasScreen' },
+  { label: 'Usuarios',    icon: 'people-outline',     screen: 'UsuariosScreen' },
+  { label: 'Membresias',  icon: 'card-outline',       screen: 'MembresiasScreen' },
 ];
 
 const STATS_RESUMEN = [
@@ -33,9 +33,9 @@ const STATS_SUSCRIPCIONES = [
 ];
 
 const ACCESOS_DIRECTOS = [
-  { titulo: 'Barberias',  desc: 'Administra de forma rapida el cataologo de barberias' },
-  { titulo: 'Usuarios',   desc: 'Gestion de los usuarios' },
-  { titulo: 'Membresias', desc: 'Administra los pagos y suscripciones de manera rapida' },
+  { titulo: 'Barberias',  desc: 'Administra de forma rapida el catálogo de barberias',         screen: 'BarberiasScreen' },
+  { titulo: 'Usuarios',   desc: 'Gestión de los usuarios',                                     screen: 'UsuariosScreen' },
+  { titulo: 'Membresias', desc: 'Administra los pagos y suscripciones de manera rapida',       screen: 'MembresiasScreen' },
 ];
 
 const SuperAdminHomeScreen = ({ navigation }) => {
@@ -51,6 +51,11 @@ const SuperAdminHomeScreen = ({ navigation }) => {
     await tokenManager.clearAll();
     navigation.replace('Home');
   };
+
+  const handleNavegar = (screen) => {
+  setDrawerVisible(false);
+  if (screen) navigation.navigate(screen);
+};
 
   return (
     <SafeAreaView style={styles.container} edges={['top']}>
@@ -110,15 +115,11 @@ const SuperAdminHomeScreen = ({ navigation }) => {
             </TouchableOpacity>
 
             <View>
-              {SIDEBAR_ITEMS.map((item) => (
+        {SIDEBAR_ITEMS.map((item) => (
   <TouchableOpacity
     key={item.label}
     style={styles.sidebarItem}
-    onPress={() => {
-      if (item.label === 'Barberias') {
-        navigation.navigate('BarberiasScreen');
-      }
-    }}
+    onPress={() => handleNavegar(item.screen)}
   >
     <Text style={[styles.sidebarText, item.active && styles.sidebarTextActive]}>
       {item.label}
@@ -141,20 +142,16 @@ const SuperAdminHomeScreen = ({ navigation }) => {
   <View style={styles.sidebar}>
     <View style={styles.sidebarItems}>
       {SIDEBAR_ITEMS.map((item) => (
-        <TouchableOpacity
-          key={item.label}
-          style={styles.sidebarItem}
-          onPress={() => {
-            if (item.label === 'Barberias') {
-              navigation.navigate('BarberiasScreen');
-            }
-          }}
-        >
-          <Text style={[styles.sidebarText, item.active && styles.sidebarTextActive]}>
-            {item.label}
-          </Text>
-        </TouchableOpacity>
-      ))}
+  <TouchableOpacity
+    key={item.label}
+    style={styles.sidebarItem}
+    onPress={() => handleNavegar(item.screen)}
+  >
+    <Text style={[styles.sidebarText, item.active && styles.sidebarTextActive]}>
+      {item.label}
+    </Text>
+  </TouchableOpacity>
+))}
     </View>
 
             <TouchableOpacity style={styles.logoutBtn} onPress={handleLogout}>
@@ -216,11 +213,7 @@ const SuperAdminHomeScreen = ({ navigation }) => {
   <TouchableOpacity
     key={acc.titulo}
     style={styles.accesoCard}
-    onPress={() => {
-  if (acc.titulo === 'Barberias') {
-    navigation.navigate('BarberiasScreen');
-  }
-}}
+    onPress={() => handleNavegar(acc.screen)}
   >
     <Text style={styles.accesoTitulo}>{acc.titulo}</Text>
     <Text style={styles.accesoDesc}>{acc.desc}</Text>

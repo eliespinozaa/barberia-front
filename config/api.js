@@ -156,6 +156,7 @@ asociarBarberia: async (barberiaId, clienteId) => {
 };
 
 export const barberiaAPI = {
+
   listar: async () => {
     try {
       const token = await tokenManager.getToken();
@@ -176,6 +177,7 @@ export const barberiaAPI = {
       return { success: false, error: 'Error de conexión' };
     }
   },
+
   listar2: async () => {
     try {
       const token = await tokenManager.getToken();
@@ -197,89 +199,154 @@ export const barberiaAPI = {
     }
   },
 
-actualizar: async (id, payload) => {
+  obtenerPorId: async (id) => {
+    try {
+      const token = await tokenManager.getToken();
+
+      const response = await fetch(
+        `${API_CONFIG.URL}/barberia/barberias/${id}`,
+        {
+          method: 'GET',
+          headers: {
+            'Content-Type': 'application/json',
+            ...(token && { Authorization: `Bearer ${token}` }),
+          },
+        }
+      );
+
+      const data = await response.json();
+
+      if (data?.code === 200) {
+        return { success: true, data: data.data };
+      }
+      return { success: false, error: data?.description };
+
+    } catch (error) {
+      return { success: false, error: 'Error de conexión' };
+    }
+  },
+
+  crear: async (payload) => {
+    try {
+      const token = await tokenManager.getToken();
+
+      const response = await fetch(
+        `${API_CONFIG.URL}/barberia/barberias`,
+        {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            ...(token && { Authorization: `Bearer ${token}` }),
+          },
+          body: JSON.stringify(payload),
+        }
+      );
+
+      const data = await response.json();
+
+      if (data?.code === 200 || data?.code === 201) {
+        return { success: true, data: data.data };
+      }
+      return { success: false, error: data?.description };
+
+    } catch (error) {
+      return { success: false, error: 'Error de conexión' };
+    }
+  },
+
+  actualizar: async (id, payload) => {
+    try {
+      const token = await tokenManager.getToken();
+
+      const response = await fetch(
+        `${API_CONFIG.URL}/barberia/barberias/${id}`,
+        {
+          method: 'PUT',
+          headers: {
+            'Content-Type': 'application/json',
+            ...(token && { Authorization: `Bearer ${token}` }),
+          },
+          body: JSON.stringify(payload),
+        }
+      );
+
+      const data = await response.json();
+
+      if (data?.code === 200) {
+        return { success: true, data: data.data };
+      }
+      return { success: false, error: data?.description };
+
+    } catch (error) {
+      return { success: false, error: 'Error de conexión' };
+    }
+  },
+
+
+  
+  eliminar: async (id) => {
   try {
     const token = await tokenManager.getToken();
 
     const response = await fetch(
       `${API_CONFIG.URL}/barberia/barberias/${id}`,
       {
-        method: 'PUT',
+        method: 'DELETE',
         headers: {
           'Content-Type': 'application/json',
           ...(token && { Authorization: `Bearer ${token}` }),
         },
-        body: JSON.stringify(payload),
       }
     );
 
     const data = await response.json();
 
     if (data?.code === 200) {
-      return {
-        success: true,
-        data: data.data,
-      };
+      return { success: true, data: data.data };
     }
-
-    return {
-      success: false,
-      error: data?.description,
-    };
+    return { success: false, error: data?.description };
 
   } catch (error) {
-    return {
-      success: false,
-      error: 'Error de conexión',
-    };
+    return { success: false, error: 'Error de conexión' };
   }
 },
 
-crear: async (payload) => {
-  try {
-    const token = await tokenManager.getToken();
+  cambiarEstado: async (id, activar) => {
+    try {
+      const token = await tokenManager.getToken();
 
-    const response = await fetch(
-      `${API_CONFIG.URL}/barberia/barberias`,
-      {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          ...(token && { Authorization: `Bearer ${token}` }),
-        },
-        body: JSON.stringify(payload),
+      const response = await fetch(
+        `${API_CONFIG.URL}/barberia/barberias/${id}/estado`,
+        {
+          method: 'PATCH',
+          headers: {
+            'Content-Type': 'application/json',
+            ...(token && { Authorization: `Bearer ${token}` }),
+          },
+          body: JSON.stringify({ activar }),
+        }
+      );
+
+      const data = await response.json();
+
+      if (data?.code === 200) {
+        return { success: true, data: data.data };
       }
-    );
+      return { success: false, error: data?.description };
 
-    const data = await response.json();
-
-    if (data?.code === 200 || data?.code === 201) {
-      return {
-        success: true,
-        data: data.data,
-      };
+    } catch (error) {
+      return { success: false, error: 'Error de conexión' };
     }
-
-    return {
-      success: false,
-      error: data?.description,
-    };
-
-  } catch (error) {
-    return {
-      success: false,
-      error: 'Error de conexión',
-    };
-  }
-},
-
+  },
+  
 };
 
 export const usuariosAPI = {
+
   listar2: async () => {
     try {
       const token = await tokenManager.getToken();
-      const response = await fetch(`${API_CONFIG.URL}/usuarios/listar`, {
+      const response = await fetch(`${API_CONFIG.URL}/listar/usuarios`, {
         method: 'GET',
         headers: {
           'Content-Type': 'application/json',
@@ -291,11 +358,390 @@ export const usuariosAPI = {
       if (data?.code === 200 && Array.isArray(data?.data)) {
         return { success: true, data: data.data };
       }
-      return { success: false, error: data?.description || 'No se pudieron obtener las barberías' };
+      return { success: false, error: data?.description || 'No se pudieron obtener los usuarios' };
     } catch (error) {
       return { success: false, error: 'Error de conexión' };
     }
   },
 
+  obtenerPorId: async (id) => {
+    try {
+      const token = await tokenManager.getToken();
+
+      const response = await fetch(
+        `${API_CONFIG.URL}/usuarios/${id}`,
+        {
+          method: 'GET',
+          headers: {
+            'Content-Type': 'application/json',
+            ...(token && { Authorization: `Bearer ${token}` }),
+          },
+        }
+      );
+
+      const data = await response.json();
+
+      if (data?.code === 200) {
+        return { success: true, data: data.data };
+      }
+      return { success: false, error: data?.description };
+
+    } catch (error) {
+      return { success: false, error: 'Error de conexión' };
+    }
+  },
+
+
+
+  actualizar: async (id, payload) => {
+    try {
+      const token = await tokenManager.getToken();
+      const response = await fetch(`${API_CONFIG.URL}/usuarios/${id}`, {
+        method: 'PUT',
+        headers: {
+          'Content-Type': 'application/json',
+          ...(token && { Authorization: `Bearer ${token}` }),
+        },
+        body: JSON.stringify(payload),
+      });
+      const data = await response.json();
+
+      if (data?.code === 200) {
+        return { success: true, data: data.data };
+      }
+      return { success: false, error: data?.description };
+    } catch (error) {
+      return { success: false, error: 'Error de conexión' };
+    }
+  },
+
+
+};
+
+
+export const suscripcionAPI = {
+
+  obtenerActiva: async (idBarberia) => {
+    try {
+      const token = await tokenManager.getToken();
+
+      const response = await fetch(
+        `${API_CONFIG.URL}/suscripciones/barberia/${idBarberia}`,
+        {
+          method: 'GET',
+          headers: {
+            'Content-Type': 'application/json',
+            ...(token && { Authorization: `Bearer ${token}` }),
+          },
+        }
+      );
+
+      const data = await response.json();
+
+      if (data?.code === 200) {
+        return { success: true, data: data.data };
+      }
+      return { success: false, error: data?.description };
+
+    } catch (error) {
+      return { success: false, error: 'Error de conexión' };
+    }
+  },
+
+  suspender: async (idSuscripcion) => {
+    try {
+      const token = await tokenManager.getToken();
+
+      const response = await fetch(
+        `${API_CONFIG.URL}/suscripciones/${idSuscripcion}/suspender`,
+        {
+          method: 'PATCH',
+          headers: {
+            'Content-Type': 'application/json',
+            ...(token && { Authorization: `Bearer ${token}` }),
+          },
+        }
+      );
+
+      const data = await response.json();
+
+      if (data?.code === 200) {
+        return { success: true, data: data.data };
+      }
+      return { success: false, error: data?.description || 'No se pudo suspender la membresía' };
+
+    } catch (error) {
+      return { success: false, error: 'Error de conexión' };
+    }
+  },
+
+  reactivar: async (idSuscripcion) => {
+    try {
+      const token = await tokenManager.getToken();
+
+      const response = await fetch(
+        `${API_CONFIG.URL}/suscripciones/${idSuscripcion}/reactivar`,
+        {
+          method: 'PATCH',
+          headers: {
+            'Content-Type': 'application/json',
+            ...(token && { Authorization: `Bearer ${token}` }),
+          },
+        }
+      );
+
+      const data = await response.json();
+
+      if (data?.code === 200) {
+        return { success: true, data: data.data };
+      }
+      return { success: false, error: data?.description || 'No se pudo reactivar la membresía' };
+
+    } catch (error) {
+      return { success: false, error: 'Error de conexión' };
+    }
+  },
+
+};
+
+export const pagoAPI = {
+
+  listarPorBarberia: async (idBarberia) => {
+    try {
+      const token = await tokenManager.getToken();
+
+      const response = await fetch(
+        `${API_CONFIG.URL}/pagos/barberia/${idBarberia}`,
+        {
+          method: 'GET',
+          headers: {
+            'Content-Type': 'application/json',
+            ...(token && { Authorization: `Bearer ${token}` }),
+          },
+        }
+      );
+
+      const data = await response.json();
+
+      if (data?.code === 200 && Array.isArray(data?.data)) {
+        return { success: true, data: data.data };
+      }
+      return { success: false, error: data?.description || 'No se pudieron obtener los pagos' };
+
+    } catch (error) {
+      return { success: false, error: 'Error de conexión' };
+    }
+  },
+
+  registrarPago: async (idPago, payload) => {
+    try {
+      const token = await tokenManager.getToken();
+
+      const response = await fetch(
+        `${API_CONFIG.URL}/pagos/${idPago}/registrar`,
+        {
+          method: 'PATCH',
+          headers: {
+            'Content-Type': 'application/json',
+            ...(token && { Authorization: `Bearer ${token}` }),
+          },
+          body: JSON.stringify(payload),
+        }
+      );
+
+      const data = await response.json();
+
+      if (data?.code === 200) {
+        return { success: true, data: data.data };
+      }
+      return { success: false, error: data?.description || 'No se pudo registrar el pago' };
+
+    } catch (error) {
+      return { success: false, error: 'Error de conexión' };
+    }
+  },
+
+};
+
+
+export const barberoAPI = {
+
+  listarPorBarberia: async (idBarberia) => {
+    try {
+      const token = await tokenManager.getToken();
+
+      const response = await fetch(
+        `${API_CONFIG.URL}/barberos/barberia/${idBarberia}`,
+        {
+          method: 'GET',
+          headers: {
+            'Content-Type': 'application/json',
+            ...(token && { Authorization: `Bearer ${token}` }),
+          },
+        }
+      );
+
+      const data = await response.json();
+
+      if (data?.code === 200 && Array.isArray(data?.data)) {
+        return { success: true, data: data.data };
+      }
+      return { success: false, error: data?.description || 'No se pudieron obtener los barberos' };
+
+    } catch (error) {
+      return { success: false, error: 'Error de conexión' };
+    }
+  },
+
+  actualizar: async (id, payload) => {
+  try {
+    const token = await tokenManager.getToken();
+    const response = await fetch(`${API_CONFIG.URL}/barberos/${id}`, {
+      method: 'PUT',
+      headers: {
+        'Content-Type': 'application/json',
+        ...(token && { Authorization: `Bearer ${token}` }),
+      },
+      body: JSON.stringify(payload),
+    });
+    const data = await response.json();
+    if (data?.code === 200) {
+      return { success: true, data: data.data };
+    }
+    return { success: false, error: data?.description };
+  } catch (error) {
+    return { success: false, error: 'Error de conexión' };
+  }
+},
+
+crear: async (payload) => {
+  try {
+    const token = await tokenManager.getToken();
+    const response = await fetch(`${API_CONFIG.URL}/barberos`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        ...(token && { Authorization: `Bearer ${token}` }),
+      },
+      body: JSON.stringify(payload),
+    });
+    const data = await response.json();
+    if (data?.code === 200) {
+      return { success: true, data: data.data };
+    }
+    return { success: false, error: data?.description || 'No se pudo crear el barbero' };
+  } catch (error) {
+    return { success: false, error: 'Error de conexión' };
+  }
+},
+
+
+eliminar: async (id) => {
+  try {
+    const token = await tokenManager.getToken();
+    const response = await fetch(`${API_CONFIG.URL}/barberos/${id}`, {
+      method: 'DELETE',
+      headers: {
+        'Content-Type': 'application/json',
+        ...(token && { Authorization: `Bearer ${token}` }),
+      },
+    });
+    const data = await response.json();
+    if (data?.code === 200) {
+      return { success: true, data: data.data };
+    }
+    return { success: false, error: data?.description || 'No se pudo eliminar el barbero' };
+  } catch (error) {
+    return { success: false, error: 'Error de conexión' };
+  }
+},
+
+};
+
+
+
+export const servicioAPI = {
+
+  listarPorBarberia: async (idBarberia) => {
+    try {
+      const token = await tokenManager.getToken();
+      const response = await fetch(`${API_CONFIG.URL}/servicios/barberia/${idBarberia}`, {
+        method: 'GET',
+        headers: {
+          'Content-Type': 'application/json',
+          ...(token && { Authorization: `Bearer ${token}` }),
+        },
+      });
+      const data = await response.json();
+      if (data?.code === 200 && Array.isArray(data?.data)) {
+        return { success: true, data: data.data };
+      }
+      return { success: false, error: data?.description || 'No se pudieron obtener los servicios' };
+    } catch (error) {
+      return { success: false, error: 'Error de conexión' };
+    }
+  },
+
+  crear: async (payload) => {
+    try {
+      const token = await tokenManager.getToken();
+      const response = await fetch(`${API_CONFIG.URL}/servicios`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          ...(token && { Authorization: `Bearer ${token}` }),
+        },
+        body: JSON.stringify(payload),
+      });
+      const data = await response.json();
+      if (data?.code === 200) {
+        return { success: true, data: data.data };
+      }
+      return { success: false, error: data?.description || 'No se pudo crear el servicio' };
+    } catch (error) {
+      return { success: false, error: 'Error de conexión' };
+    }
+  },
+
+  actualizar: async (id, payload) => {
+    try {
+      const token = await tokenManager.getToken();
+      const response = await fetch(`${API_CONFIG.URL}/servicios/${id}`, {
+        method: 'PUT',
+        headers: {
+          'Content-Type': 'application/json',
+          ...(token && { Authorization: `Bearer ${token}` }),
+        },
+        body: JSON.stringify(payload),
+      });
+      const data = await response.json();
+      if (data?.code === 200) {
+        return { success: true, data: data.data };
+      }
+      return { success: false, error: data?.description || 'No se pudo actualizar el servicio' };
+    } catch (error) {
+      return { success: false, error: 'Error de conexión' };
+    }
+  },
+
+  eliminar: async (id) => {
+    try {
+      const token = await tokenManager.getToken();
+      const response = await fetch(`${API_CONFIG.URL}/servicios/${id}`, {
+        method: 'DELETE',
+        headers: {
+          'Content-Type': 'application/json',
+          ...(token && { Authorization: `Bearer ${token}` }),
+        },
+      });
+      const data = await response.json();
+      if (data?.code === 200) {
+        return { success: true, data: data.data };
+      }
+      return { success: false, error: data?.description || 'No se pudo eliminar el servicio' };
+    } catch (error) {
+      return { success: false, error: 'Error de conexión' };
+    }
+  },
 
 };

@@ -9,43 +9,39 @@ import {
   Modal,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { Ionicons } from '@expo/vector-icons';
 import { useWindowDimensions } from 'react-native';
 import { useTheme } from '../../context/ThemeContext';
-import createStyles, { getPlaceholderColor } from '../../styles/superadmin/BarberiasStyles';
-import { barberiaAPI, usuariosAPI } from '../../config/api';
-
+import createStyles, { getPlaceholderColor, getIconColor } from '../../styles/superadmin/BarberiasStyles';
+import { barberiaAPI, usuariosAPI, suscripcionAPI } from '../../config/api';
+import LoadingOverlay from '../../components/LoadingOverlay';
+import ResultModal from '../../components/ResultModal';
+import Tooltip from '../../components/Tooltip';
+import { Ionicons, Feather, MaterialCommunityIcons } from '@expo/vector-icons';
 
 
 const ESTADO_OPCIONES = ['Todas', 'Activas', 'Suspendidas'];
 const SUSCRIPCION_OPCIONES = ['Todas', 'Pagadas', 'Por vencer', 'Vencidas'];
 const FECHA_OPCIONES = ['Recientes', 'Más antiguas', 'A-Z'];
 
-const FilterDropdown = ({ label, value, options, onSelect, styles }) => {
-  const [open, setOpen] = useState(false);
-
-
+const FilterDropdown = ({ label, value, options, onSelect, styles, isOpen, onToggle }) => {
   return (
-    <View style={styles.filterGroup}>
+    <View style={[styles.filterGroup, isOpen && styles.filterGroupOpen]}>
       <Text style={styles.filterLabel}>{label}:</Text>
       <View style={{ position: 'relative' }}>
-        <TouchableOpacity
-          style={styles.filterPill}
-          onPress={() => setOpen(!open)}
-        >
+        <TouchableOpacity style={styles.filterPill} onPress={onToggle}>
           <Text style={styles.filterPillText}>{value}</Text>
-          <Ionicons name={open ? 'chevron-up' : 'chevron-down'} size={14} color="#1A1A1A" />
+          <Ionicons name={isOpen ? 'chevron-up' : 'chevron-down'} size={14} color="#1A1A1A" />
         </TouchableOpacity>
 
-        {open && (
-          <View style={[styles.dropdownMenu, { top: 38, left: 0 }]}>
+        {isOpen && (
+          <View style={styles.dropdownMenu}>
             {options.map((opt) => (
               <TouchableOpacity
                 key={opt}
                 style={styles.dropdownMenuItem}
                 onPress={() => {
                   onSelect(opt);
-                  setOpen(false);
+                  onToggle();
                 }}
               >
                 <Text style={styles.dropdownMenuItemText}>{opt}</Text>
@@ -57,22 +53,36 @@ const FilterDropdown = ({ label, value, options, onSelect, styles }) => {
     </View>
   );
 };
-
 const BarberiasScreen = ({ navigation, route }) => {
   const { width } = useWindowDimensions();
   const { theme } = useTheme();
   const styles = createStyles(width, theme);
   const placeholderColor = getPlaceholderColor(theme);
+  const iconColor = getIconColor(theme);
 const [listaBarberias, setListaBarberias] = useState([]);
   const [searchQuery, setSearchQuery] = useState('');
   const [estadoFiltro, setEstadoFiltro] = useState('Todas');
   const [suscripcionFiltro, setSuscripcionFiltro] = useState('Todas');
   const [fechaFiltro, setFechaFiltro] = useState('Recientes');
   const [barberiaAEliminar, setBarberiaAEliminar] = useState(null);
+const [filtroAbierto, setFiltroAbierto] = useState(null);
+const [cargando, setCargando] = useState(true);
+const [eliminando, setEliminando] = useState(false);
+const [actualizandoEstado, setActualizandoEstado] = useState(null);
+const [resultado, setResultado] = useState({
+  visible: false,
+  type: 'success',
+  title: '',
+  message: '',
+});
 
+const cerrarResultado = () => {
+  setResultado((prev) => ({ ...prev, visible: false }));
+};
 
-  useEffect(() => {
+useEffect(() => {
   const cargarDatos = async () => {
+    setCargando(true);
 
     const [barberiasRes, usuariosRes] = await Promise.all([
       barberiaAPI.listar2(),
@@ -80,32 +90,53 @@ const [listaBarberias, setListaBarberias] = useState([]);
     ]);
 
     if (!barberiasRes.success) {
-      console.log(barberiasRes.error);
+      setCargando(false);
+      setResultado({
+        visible: true,
+        type: 'error',
+        title: 'No se pudieron cargar las barberías',
+        message: barberiasRes.error || 'Ocurrió un error al obtener la lista de barberías.',
+      });
       return;
     }
 
     if (!usuariosRes.success) {
-      console.log(usuariosRes.error);
+      setCargando(false);
+      setResultado({
+        visible: true,
+        type: 'error',
+        title: 'No se pudieron cargar los usuarios',
+        message: usuariosRes.error || 'Ocurrió un error al obtener la lista de usuarios.',
+      });
       return;
     }
 
     const usuarios = usuariosRes.data;
-const dataTransformada = barberiasRes.data.map((b) => {
-  const dueno = usuarios.find((u) => u.id === b.idUsuario);
-  return {
-    id: b.id,
-    nombre: b.nombre,
-    telefono: b.telefono,
-    direccion: b.direccion,
-    foto: b.imagen,
-    activa: b.estado === 1,
-    idUsuario: b.idUsuario,
-    dueno: dueno ? `${dueno.nombre} ${dueno.apellido}` : 'Sin asignar',
-    suscripcion: 'N/A',
-  };
-});
+
+    const suscripcionesRes = await Promise.all(
+      barberiasRes.data.map((b) => suscripcionAPI.obtenerActiva(b.id))
+    );
+
+    const dataTransformada = barberiasRes.data.map((b, index) => {
+      const dueno = usuarios.find((u) => u.id === b.idUsuario);
+      const suscripcionRes = suscripcionesRes[index];
+      const suscripcion = suscripcionRes.success ? suscripcionRes.data : null;
+
+      return {
+        id: b.id,
+        nombre: b.nombre,
+        telefono: b.telefono,
+        direccion: b.direccion,
+        foto: b.imagen,
+        activa: b.estado === 1,
+        idUsuario: b.idUsuario,
+        dueno: dueno ? `${dueno.nombre} ${dueno.apellido}` : 'Sin asignar',
+        suscripcion: suscripcion ? suscripcion.estado : 'N/A',
+      };
+    });
 
     setListaBarberias(dataTransformada);
+    setCargando(false);
   };
 
   cargarDatos();
@@ -129,30 +160,46 @@ const dataTransformada = barberiasRes.data.map((b) => {
     }
   }, [route?.params?.barberiaActualizada]);
 
+
   const barberias = useMemo(() => {
-    let lista = [...listaBarberias];
+  let lista = [...listaBarberias];
 
-    if (searchQuery.trim()) {
-      const q = searchQuery.toLowerCase();
-      lista = lista.filter((b) => b.nombre.toLowerCase().includes(q));
-    }
+  if (searchQuery.trim()) {
+    const q = searchQuery.toLowerCase();
+    lista = lista.filter((b) => b.nombre.toLowerCase().includes(q));
+  }
 
-    if (estadoFiltro === 'Activas') {
-      lista = lista.filter((b) => b.activa);
-    } else if (estadoFiltro === 'Suspendidas') {
-      lista = lista.filter((b) => !b.activa);
-    }
+  if (estadoFiltro === 'Activas') {
+    lista = lista.filter((b) => b.activa);
+  } else if (estadoFiltro === 'Suspendidas') {
+    lista = lista.filter((b) => !b.activa);
+  }
 
-    return lista;
-  }, [listaBarberias, searchQuery, estadoFiltro]);
+  if (suscripcionFiltro === 'Pagadas') {
+    lista = lista.filter((b) => b.suscripcion === 'Pagada');
+  } else if (suscripcionFiltro === 'Por vencer') {
+    lista = lista.filter((b) => b.suscripcion === 'Por vencer');
+  } else if (suscripcionFiltro === 'Vencidas') {
+    lista = lista.filter((b) => b.suscripcion === 'Vencida');
+  }
+
+  if (fechaFiltro === 'A-Z') {
+    lista.sort((a, b) => a.nombre.localeCompare(b.nombre));
+  } else if (fechaFiltro === 'Recientes') {
+    lista.reverse();
+  } else if (fechaFiltro === 'Más antiguas') {
+  }
+
+  return lista;
+}, [listaBarberias, searchQuery, estadoFiltro, suscripcionFiltro, fechaFiltro]);
 
   const handleAgregar = () => {
     navigation.navigate('BarberiasNuevaScreen');
   };
 
-  const handleVer = (barberia) => {
-    console.log('Ver detalle de', barberia.nombre, '(pendiente)');
-  };
+ const handleVer = (barberia) => {
+  navigation.navigate('DetalleBarberiaScreen', { barberiaId: barberia.id });
+};
 
   const handleEditar = (barberia) => {
     navigation.navigate('BarberiasNuevaScreen', { barberia });
@@ -166,14 +213,62 @@ const dataTransformada = barberiasRes.data.map((b) => {
     setBarberiaAEliminar(null);
   };
 
-  // TODO: cuando exista API, aquí se hará el DELETE/PATCH real
-  const confirmarInactivar = () => {
-    if (!barberiaAEliminar) return;
+const handleToggleEstado = async (barberia) => {
+  const nuevaActiva = !barberia.activa;
+  setActualizandoEstado(barberia.id);
+
+  setListaBarberias((prev) =>
+    prev.map((b) => (b.id === barberia.id ? { ...b, activa: nuevaActiva } : b))
+  );
+
+  const res = await barberiaAPI.cambiarEstado(barberia.id, nuevaActiva);
+
+  if (!res.success) {
     setListaBarberias((prev) =>
-      prev.filter((b) => b.id !== barberiaAEliminar.id)
+      prev.map((b) => (b.id === barberia.id ? { ...b, activa: !nuevaActiva } : b))
     );
+    setResultado({
+      visible: true,
+      type: 'error',
+      title: 'No se pudo actualizar',
+      message: res.error || 'Ocurrió un error al cambiar el estado de la barbería.',
+    });
+  }
+
+  setActualizandoEstado(null);
+};
+
+const confirmarEliminar = async () => {
+  if (!barberiaAEliminar) return;
+
+  setEliminando(true);
+
+  const res = await barberiaAPI.eliminar(barberiaAEliminar.id);
+
+  setEliminando(false);
+
+  if (!res.success) {
     setBarberiaAEliminar(null);
-  };
+    setResultado({
+      visible: true,
+      type: 'error',
+      title: 'No se pudo eliminar',
+      message: res.error || 'Ocurrió un error al eliminar la barbería.',
+    });
+    return;
+  }
+
+  setListaBarberias((prev) =>
+    prev.filter((b) => b.id !== barberiaAEliminar.id)
+  );
+  setBarberiaAEliminar(null);
+  setResultado({
+    visible: true,
+    type: 'success',
+    title: '¡Listo!',
+    message: 'La barbería se eliminó correctamente.',
+  });
+};
 
   return (
     <SafeAreaView style={styles.container} edges={['top']}>
@@ -182,7 +277,7 @@ const dataTransformada = barberiasRes.data.map((b) => {
       <View style={styles.header}>
         <TouchableOpacity
   style={styles.backBtn}
-  onPress={() => navigation.navigate('SuperAdminHomeScreen')}
+  onPress={() => navigation.replace('SuperAdminHomeScreen')}
 >
   <Ionicons name="arrow-back" size={24} color="#FFFFFF" />
 </TouchableOpacity>
@@ -213,37 +308,45 @@ const dataTransformada = barberiasRes.data.map((b) => {
           />
         </View>
 
-        {/* ── Filtros ── */}
         <View style={styles.filtersRow}>
-          <FilterDropdown
-            label="Estado"
-            value={estadoFiltro}
-            options={ESTADO_OPCIONES}
-            onSelect={setEstadoFiltro}
-            styles={styles}
-          />
-          <FilterDropdown
-            label="Suscripcion"
-            value={suscripcionFiltro}
-            options={SUSCRIPCION_OPCIONES}
-            onSelect={setSuscripcionFiltro}
-            styles={styles}
-          />
-          <FilterDropdown
-            label="Fecha"
-            value={fechaFiltro}
-            options={FECHA_OPCIONES}
-            onSelect={setFechaFiltro}
-            styles={styles}
-          />
+<View style={[styles.filtersRow, filtroAbierto && styles.filtersRowOpen]}>
+  <FilterDropdown
+    label="Estado"
+    value={estadoFiltro}
+    options={ESTADO_OPCIONES}
+    onSelect={setEstadoFiltro}
+    styles={styles}
+    isOpen={filtroAbierto === 'estado'}
+    onToggle={() => setFiltroAbierto(filtroAbierto === 'estado' ? null : 'estado')}
+  />
+  <FilterDropdown
+    label="Suscripcion"
+    value={suscripcionFiltro}
+    options={SUSCRIPCION_OPCIONES}
+    onSelect={setSuscripcionFiltro}
+    styles={styles}
+    isOpen={filtroAbierto === 'suscripcion'}
+    onToggle={() => setFiltroAbierto(filtroAbierto === 'suscripcion' ? null : 'suscripcion')}
+  />
+  <FilterDropdown
+    label="Fecha"
+    value={fechaFiltro}
+    options={FECHA_OPCIONES}
+    onSelect={setFechaFiltro}
+    styles={styles}
+    isOpen={filtroAbierto === 'fecha'}
+    onToggle={() => setFiltroAbierto(filtroAbierto === 'fecha' ? null : 'fecha')}
+  />
+</View>
         </View>
 
-        {/* ── Botón agregar barbería ── */}
         <View style={styles.addButtonRow}>
-          <TouchableOpacity style={styles.fab} onPress={handleAgregar}>
-            <Ionicons name="add" size={28} color="#0B1014" />
-          </TouchableOpacity>
-        </View>
+  <Tooltip label="Agregar">
+    <TouchableOpacity style={styles.fab} onPress={handleAgregar}>
+      <MaterialCommunityIcons name="plus-thick" size={24} color="#0B1014" />
+    </TouchableOpacity>
+  </Tooltip>
+</View>
 
         {/* ── Listado de barberías ── */}
         {barberias.length > 0 ? (
@@ -282,26 +385,32 @@ const dataTransformada = barberiasRes.data.map((b) => {
                   </Text>
                 </View>
 
-                <View style={styles.cardActions}>
-                  <TouchableOpacity
-                    style={styles.cardActionBtn}
-                    onPress={() => handleVer(barberia)}
-                  >
-                    <Ionicons name="eye-outline" size={18} color="#1A1A1A" />
-                  </TouchableOpacity>
-                  <TouchableOpacity
-                    style={styles.cardActionBtn}
-                    onPress={() => handleEditar(barberia)}
-                  >
-                    <Ionicons name="pencil-outline" size={18} color="#1A1A1A" />
-                  </TouchableOpacity>
-                  <TouchableOpacity
-                    style={styles.cardActionBtn}
-                    onPress={() => handleEliminar(barberia)}
-                  >
-                    <Ionicons name="trash-outline" size={18} color="#1A1A1A" />
-                  </TouchableOpacity>
-                </View>
+              <View style={styles.cardActions}>
+  <Tooltip label="Ver">
+    <TouchableOpacity onPress={() => handleVer(barberia)}>
+      <Feather name="eye" size={20} color={iconColor} />
+    </TouchableOpacity>
+  </Tooltip>
+  <Tooltip label="Editar">
+    <TouchableOpacity onPress={() => handleEditar(barberia)}>
+      <Feather name="edit-2" size={20} color={iconColor} />
+    </TouchableOpacity>
+  </Tooltip>
+  <Tooltip label={barberia.activa ? 'Desactivar' : 'Activar'}>
+    <TouchableOpacity
+      onPress={() => handleToggleEstado(barberia)}
+      disabled={actualizandoEstado === barberia.id}
+    >
+      <Feather name={barberia.activa ? 'pause' : 'play'} size={20} color={iconColor} />
+    </TouchableOpacity>
+  </Tooltip>
+  <Tooltip label="Eliminar">
+    <TouchableOpacity onPress={() => handleEliminar(barberia)}>
+      <Feather name="trash-2" size={20} color="#EF4444" />
+    </TouchableOpacity>
+  </Tooltip>
+</View>
+
               </View>
             ))}
           </View>
@@ -313,7 +422,7 @@ const dataTransformada = barberiasRes.data.map((b) => {
         )}
       </ScrollView>
 
-      {/* ── Modal: confirmar inactivar barbería ── */}
+      {/* ── Modal: confirmar eliminar barbería ── */}
       <Modal
         transparent
         visible={!!barberiaAEliminar}
@@ -323,14 +432,14 @@ const dataTransformada = barberiasRes.data.map((b) => {
         <View style={styles.modalOverlay}>
           <View style={styles.modalCard}>
             <View style={styles.modalHeader}>
-              <Text style={styles.modalTitle}>Inactivar</Text>
+              <Text style={styles.modalTitle}>Eliminar barbería</Text>
               <TouchableOpacity style={styles.modalCloseBtn} onPress={cerrarModalEliminar}>
                 <Ionicons name="close" size={18} color="#FFFFFF" />
               </TouchableOpacity>
             </View>
 
             <Text style={styles.modalMessage}>
-              Estas seguro que deseas inactivar a la barberia definitivamente?
+              ¿Estás seguro que deseas eliminar esta barbería? Esta acción no se puede deshacer.
             </Text>
 
             <View style={styles.modalActions}>
@@ -342,14 +451,26 @@ const dataTransformada = barberiasRes.data.map((b) => {
               </TouchableOpacity>
               <TouchableOpacity
                 style={styles.modalBtnConfirm}
-                onPress={confirmarInactivar}
+                onPress={confirmarEliminar}
               >
-                <Text style={styles.modalBtnConfirmText}>Sí, inactivar</Text>
+                <Text style={styles.modalBtnConfirmText}>Sí, eliminar</Text>
               </TouchableOpacity>
             </View>
           </View>
         </View>
-      </Modal>
+    </Modal>
+
+      <LoadingOverlay visible={cargando} message="Cargando barberías..." />
+      <LoadingOverlay visible={eliminando} message="Eliminando barbería..." />
+      <LoadingOverlay visible={!!actualizandoEstado} message="Actualizando estado..."/>
+
+      <ResultModal
+        visible={resultado.visible}
+        type={resultado.type}
+        title={resultado.title}
+        message={resultado.message}
+        onClose={cerrarResultado}
+      />
     </SafeAreaView>
   );
 };
