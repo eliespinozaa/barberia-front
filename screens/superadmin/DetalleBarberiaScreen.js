@@ -745,7 +745,7 @@ const formatearMonto = (monto) => {
   const mostrarFab = tabActivo === 'Barberos' || tabActivo === 'Servicios';
 
   return (
-    <SafeAreaView style={styles.container} edges={['top']}>
+    <SafeAreaView style={styles.container} edges={["top", "bottom", "left", "right"]}>
       {/* ── Header ── */}
       <View style={styles.header}>
         <TouchableOpacity

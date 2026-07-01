@@ -199,7 +199,7 @@ const handleSelectBarberia = async (item) => {
 };
 
   return (
-    <SafeAreaView style={styles.container}>
+    <SafeAreaView style={styles.container} edges={["top", "bottom", "left", "right"]}>
 
       {/* Modal de carga */}
       <Modal visible={loading} transparent animationType="fade">

@@ -23,6 +23,19 @@ import DetalleBarberiaScreen from './screens/superadmin/DetalleBarberiaScreen';
 import EditarBarberoScreen from './screens/superadmin/EditarBarberoScreen';
 import EditarServicioScreen from './screens/superadmin/EditarServicioScreen';
 import UsuariosScreen from './screens/superadmin/UsuariosScreen';
+import EditarUsuarioScreen from './screens/superadmin/EditarUsuarioScreen';
+import MembresiasScreen from './screens/superadmin/MembresiasScreen';
+import DetalleMembresiaScreen from './screens/superadmin/DetalleMembresiaScreen';
+import PerfilScreen from './screens/superadmin/PerfilScreen';
+
+import AdminClientesScreen from './screens/owner/AdminClientesScreen';
+import AdminBarberosScreen from './screens/owner/AdminBarberosScreen';
+import AdminServiciosScreen from './screens/owner/AdminServiciosScreen';
+import AdminPromocionesScreen from './screens/owner/AdminPromocionesScreen';
+import AdminEditarPromocionScreen from './screens/owner/AdminEditarPromocionScreen';
+import AdminHorariosScreen from './screens/owner/AdminHorariosScreen';
+import AdminEditarHorarioScreen from './screens/owner/AdminEditarHorarioScreen';
+
 
 
 
@@ -141,6 +154,21 @@ export default function App() {
 <Stack.Screen name="EditarBarberoScreen" component={EditarBarberoScreen} options={{ gestureEnabled: false }} />
 <Stack.Screen name="EditarServicioScreen" component={EditarServicioScreen} options={{ gestureEnabled: false }} />
 <Stack.Screen name="UsuariosScreen" component={UsuariosScreen} options={{ gestureEnabled: false }} />
+<Stack.Screen name="EditarUsuarioScreen" component={EditarUsuarioScreen} options={{ gestureEnabled: false }} />
+<Stack.Screen name="MembresiasScreen" component={MembresiasScreen} options={{ gestureEnabled: false }} />
+<Stack.Screen name="DetalleMembresiaScreen" component={DetalleMembresiaScreen} options={{ gestureEnabled: false }} />
+<Stack.Screen name="PerfilScreen" component={PerfilScreen} options={{ gestureEnabled: false }} />
+
+<Stack.Screen name="AdminClientesScreen" component={AdminClientesScreen} options={{ gestureEnabled: false }} />
+<Stack.Screen name="AdminBarberosScreen" component={AdminBarberosScreen} options={{ gestureEnabled: false }} />
+<Stack.Screen name="AdminServiciosScreen" component={AdminServiciosScreen} options={{ gestureEnabled: false }} />
+<Stack.Screen name="AdminPromocionesScreen" component={AdminPromocionesScreen} options={{ gestureEnabled: false }} />
+<Stack.Screen name="AdminEditarPromocionScreen" component={AdminEditarPromocionScreen} options={{ gestureEnabled: false }} />
+<Stack.Screen name="AdminEditarHorarioScreen" component={AdminEditarHorarioScreen} options={{ gestureEnabled: false }} />
+<Stack.Screen name="AdminHorariosScreen" component={AdminHorariosScreen} options={{ gestureEnabled: false }} />
+
+
+
 
 
 

@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import {
   View,
   Text,
@@ -8,8 +8,9 @@ import {
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import { useWindowDimensions } from 'react-native';
+import { useFocusEffect } from '@react-navigation/native';
 import { useTheme } from '../../context/ThemeContext';
-import { tokenManager } from '../../config/api';
+import { tokenManager, barberiaAPI, usuariosAPI, suscripcionAPI } from '../../config/api';
 import createStyles from '../../styles/superadmin/SuperAdminHomeStyles';
 
 const SIDEBAR_ITEMS = [
@@ -17,20 +18,12 @@ const SIDEBAR_ITEMS = [
   { label: 'Barberías',   icon: 'storefront-outline', screen: 'BarberiasScreen' },
   { label: 'Usuarios',    icon: 'people-outline',     screen: 'UsuariosScreen' },
   { label: 'Membresias',  icon: 'card-outline',       screen: 'MembresiasScreen' },
+  { label: 'Mi Perfil',   icon: 'person-outline',     screen: 'PerfilScreen' },
 ];
 
-const STATS_RESUMEN = [
-  { label: 'Barberias',    value: '12',  icon: 'time-outline' },
-  { label: 'Clientes',     value: '25',  icon: 'close-circle-outline' },
-  { label: 'Activas',      value: '10',  icon: 'arrow-down-outline' },
-  { label: 'Suspendidas',  value: '2',   icon: 'flash-outline' },
-];
 
-const STATS_SUSCRIPCIONES = [
-  { label: 'Pagadas',     value: '9.0',  icon: 'briefcase-outline' },
-  { label: 'Por vencer',  value: '+99',  icon: 'warning-outline' },
-  { label: 'Vencidas',    value: '12',   icon: 'close-square-outline' },
-];
+
+
 
 const ACCESOS_DIRECTOS = [
   { titulo: 'Barberias',  desc: 'Administra de forma rapida el catálogo de barberias',         screen: 'BarberiasScreen' },
@@ -46,6 +39,81 @@ const SuperAdminHomeScreen = ({ navigation }) => {
   const [dropdownVisible, setDropdownVisible] = useState(false);
   const [drawerVisible, setDrawerVisible] = useState(false);
 
+
+  const [cargandoStats, setCargandoStats] = useState(true);
+const [statsResumen, setStatsResumen] = useState({
+  barberias: 0,
+  clientes: 0,
+  activas: 0,
+  suspendidas: 0,
+});
+const [statsSuscripciones, setStatsSuscripciones] = useState({
+  pagadas: 0,
+  porVencer: 0,
+  vencidas: 0,
+});
+
+const cargarStats = useCallback(async () => {
+  setCargandoStats(true);
+
+  const [barberiasRes, usuariosRes] = await Promise.all([
+    barberiaAPI.listar(),
+    usuariosAPI.listar2(),
+  ]);
+
+  const barberias = barberiasRes.success ? barberiasRes.data : [];
+  const usuarios = usuariosRes.success ? usuariosRes.data : [];
+
+  const clientes = usuarios.filter((u) => u.rol === 'CLIENTE').length;
+  const activas = barberias.filter((b) => b.estado === 1).length;
+  const suspendidas = barberias.filter((b) => b.estado !== 1).length;
+
+  setStatsResumen({
+    barberias: barberias.length,
+    clientes,
+    activas,
+    suspendidas,
+  });
+
+ const suscripcionesRes = await Promise.all(
+  barberias.map((b) => suscripcionAPI.obtenerActiva(b.idBarberia))
+);
+
+  let pagadas = 0;
+  let porVencer = 0;
+  let vencidas = 0;
+  const hoy = new Date();
+  const en7Dias = new Date();
+  en7Dias.setDate(hoy.getDate() + 7);
+
+  suscripcionesRes.forEach((res) => {
+    if (!res.success || !res.data) return;
+    const sub = res.data;
+
+    if (sub.estado === 'VENCIDA') {
+      vencidas += 1;
+      return;
+    }
+    if (sub.estado === 'ACTIVA') {
+      const fechaFin = new Date(sub.fechaFin);
+      if (fechaFin <= en7Dias && fechaFin >= hoy) {
+        porVencer += 1;
+      } else {
+        pagadas += 1;
+      }
+    }
+  });
+
+  setStatsSuscripciones({ pagadas, porVencer, vencidas });
+  setCargandoStats(false);
+}, []);
+
+useFocusEffect(
+  useCallback(() => {
+    cargarStats();
+  }, [cargarStats])
+);
+
   const handleLogout = async () => {
     setDropdownVisible(false);
     await tokenManager.clearAll();
@@ -58,7 +126,7 @@ const SuperAdminHomeScreen = ({ navigation }) => {
 };
 
   return (
-    <SafeAreaView style={styles.container} edges={['top']}>
+    <SafeAreaView style={styles.container} edges={["top", "bottom", "left", "right"]}>
 
       {/* ── Navbar superior ── */}
       <View style={styles.navbar}>
@@ -86,10 +154,13 @@ const SuperAdminHomeScreen = ({ navigation }) => {
       {/* ── Dropdown perfil ── */}
       {dropdownVisible && (
         <View style={styles.dropdown}>
-          <TouchableOpacity style={styles.dropdownItem} onPress={() => setDropdownVisible(false)}>
-            <Ionicons name="person-outline" size={18} color="#FFFFFF" />
-            <Text style={styles.dropdownText}>Mi Perfil</Text>
-          </TouchableOpacity>
+         <TouchableOpacity
+  style={styles.dropdownItem}
+  onPress={() => { setDropdownVisible(false); navigation.navigate('PerfilScreen'); }}
+>
+  <Ionicons name="person-outline" size={18} color="#FFFFFF" />
+  <Text style={styles.dropdownText}>Mi Perfil</Text>
+</TouchableOpacity>
           <TouchableOpacity style={styles.dropdownItem} onPress={() => { toggleTheme(); setDropdownVisible(false); }}>
             <Ionicons name="moon-outline" size={18} color="#FFFFFF" />
             <Text style={styles.dropdownText}>Modo Oscuro</Text>
@@ -176,34 +247,44 @@ const SuperAdminHomeScreen = ({ navigation }) => {
 
             {/* Resumen general */}
             <Text style={styles.statsSectionTitle}>Resumen general</Text>
-            <View style={styles.statsGrid}>
-              {STATS_RESUMEN.map((s) => (
-                <View key={s.label} style={styles.statItem}>
-                  <View style={styles.statHeaderRow}>
-                    <Ionicons name={s.icon} size={18} color="#FFFFFF" />
-                    <Text style={styles.statLabel}>{s.label}</Text>
-                  </View>
-                  <Text style={styles.statValue}>{s.value}</Text>
-                </View>
-              ))}
-            </View>
+           <View style={styles.statsGrid}>
+  {[
+    { label: 'Barberias',   value: statsResumen.barberias,   icon: 'storefront-outline' },
+    { label: 'Clientes',    value: statsResumen.clientes,    icon: 'people-outline' },
+    { label: 'Activas',     value: statsResumen.activas,     icon: 'checkmark-circle-outline' },
+    { label: 'Suspendidas', value: statsResumen.suspendidas, icon: 'close-circle-outline' },
+  ].map((s) => (
+    <View key={s.label} style={styles.statItem}>
+      <View style={styles.statHeaderRow}>
+        <Ionicons name={s.icon} size={18} color="#FFFFFF" />
+        <Text style={styles.statLabel}>{s.label}</Text>
+      </View>
+      <Text style={styles.statValue}>{cargandoStats ? '...' : s.value}</Text>
+    </View>
+  ))}
+</View>
 
             {/* Divisor */}
             <View style={styles.statsDivider} />
 
             {/* Suscripciones */}
             <Text style={styles.statsSectionTitle}>Suscripciones</Text>
-            <View style={styles.statsGrid}>
-              {STATS_SUSCRIPCIONES.map((s) => (
-                <View key={s.label} style={styles.statItem}>
-                  <View style={styles.statHeaderRow}>
-                    <Ionicons name={s.icon} size={18} color="#FFFFFF" />
-                    <Text style={styles.statLabel}>{s.label}</Text>
-                  </View>
-                  <Text style={styles.statValue}>{s.value}</Text>
-                </View>
-              ))}
-            </View>
+           
+           <View style={styles.statsGrid}>
+  {[
+    { label: 'Pagadas',    value: statsSuscripciones.pagadas,   icon: 'checkmark-done-outline' },
+    { label: 'Por vencer', value: statsSuscripciones.porVencer, icon: 'warning-outline' },
+    { label: 'Vencidas',   value: statsSuscripciones.vencidas,  icon: 'close-square-outline' },
+  ].map((s) => (
+    <View key={s.label} style={styles.statItem}>
+      <View style={styles.statHeaderRow}>
+        <Ionicons name={s.icon} size={18} color="#FFFFFF" />
+        <Text style={styles.statLabel}>{s.label}</Text>
+      </View>
+      <Text style={styles.statValue}>{cargandoStats ? '...' : s.value}</Text>
+    </View>
+  ))}
+</View>
 
           </View>
 

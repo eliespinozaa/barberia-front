@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import {
   View,
   Text,
@@ -9,19 +9,19 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import { useWindowDimensions } from 'react-native';
 import { useTheme } from '../../context/ThemeContext';
-import { tokenManager } from '../../config/api';
+import { tokenManager, barberiaAPI } from '../../config/api';
 import createStyles from '../../styles/owner/OwnerHomeStyles';
 
 const SIDEBAR_ITEMS = [
-  { label: 'Inicio',          icon: 'home-outline',         active: true },
-  { label: 'Citas Agendadas', icon: 'calendar-outline' },
-  { label: 'Clientes',        icon: 'people-outline' },
-  { label: 'Barberos',        icon: 'cut-outline' },
-  { label: 'Servicios',       icon: 'list-outline' },
-  { label: 'Promociones',     icon: 'flash-outline' },
-  { label: 'Horarios',        icon: 'time-outline' },
-  { label: 'Membresía',       icon: 'card-outline' },
-  { label: 'Reseñas',         icon: 'star-outline' },
+  { label: 'Inicio',          icon: 'home-outline',       screen: 'OwnerHomeScreen', active: true },
+  { label: 'Citas Agendadas', icon: 'calendar-outline',   screen: 'CitasAgendadasScreen' },
+  { label: 'Clientes',        icon: 'people-outline',     screen: 'AdminClientesScreen' },
+  { label: 'Barberos',        icon: 'cut-outline',        screen: 'AdminBarberosScreen' },
+  { label: 'Servicios',       icon: 'list-outline',       screen: 'AdminServiciosScreen' },
+  { label: 'Promociones',     icon: 'flash-outline',      screen: 'AdminPromocionesScreen' },
+  { label: 'Horarios',        icon: 'time-outline',       screen: 'AdminHorariosScreen' },
+  { label: 'Membresía',       icon: 'card-outline',       screen: 'MembresiaScreen' },
+  { label: 'Reseñas',         icon: 'star-outline',       screen: 'ResenasScreen' },
 ];
 
 const STATS_ROW1 = [
@@ -37,11 +37,10 @@ const STATS_ROW2 = [
   { label: 'Reseñas',         value: '+99',  icon: 'happy-outline' },
   { label: 'Servicios',       value: '12',   icon: 'document-text-outline' },
 ];
-
 const ACCESOS_DIRECTOS = [
-  { titulo: 'Clientes',    desc: 'Registra y elimina a clientes de manera rápida.' },
-  { titulo: 'Servicios',   desc: 'Administra el catálogo de servicios que ofrecemos en nuestra barbería' },
-  { titulo: 'Promociones', desc: 'Crea nuevas promociones y así obtener nuevas visitas' },
+  { titulo: 'Clientes',    desc: 'Registra y elimina a clientes de manera rápida.', screen: 'AdminClientesScreen' },
+  { titulo: 'Servicios',   desc: 'Administra el catálogo de servicios que ofrecemos en nuestra barbería', screen: 'AdminServiciosScreen' },
+  { titulo: 'Promociones', desc: 'Crea nuevas promociones y así obtener nuevas visitas', screen: 'AdminPromocionesScreen' },
 ];
 
 const OwnerHomeScreen = ({ navigation }) => {
@@ -52,6 +51,23 @@ const OwnerHomeScreen = ({ navigation }) => {
   const [dropdownVisible, setDropdownVisible] = useState(false);
   const [drawerVisible, setDrawerVisible] = useState(false);
 
+ const [barberia, setBarberia] = useState(null);
+
+useEffect(() => {
+  const cargarBarberia = async () => {
+    const user = await tokenManager.getUser();
+    if (!user?.id) return;
+
+    const res = await barberiaAPI.obtenerPorUsuario(user.id);
+    if (res.success) {
+      setBarberia(res.data); 
+    } else {
+      console.log('Error al traer barbería:', res.error);
+    }
+  };
+  cargarBarberia();
+}, []);
+
   const handleLogout = async () => {
     setDropdownVisible(false);
     await tokenManager.clearAll();
@@ -59,7 +75,7 @@ const OwnerHomeScreen = ({ navigation }) => {
   };
 
   return (
-    <SafeAreaView style={styles.container} edges={['top']}>
+    <SafeAreaView style={styles.container} edges={["top", "bottom", "left", "right"]}>
 
       {/* ── Navbar superior ── */}
       <View style={styles.navbar}>
@@ -119,17 +135,17 @@ const OwnerHomeScreen = ({ navigation }) => {
             </TouchableOpacity>
 
             <View>
-              {SIDEBAR_ITEMS.map((item) => (
-                <TouchableOpacity
-                  key={item.label}
-                  style={styles.drawerItem}
-                  onPress={() => setDrawerVisible(false)}
-                >
-                  <Text style={[styles.drawerText, item.active && styles.drawerTextActive]}>
-                    {item.label}
-                  </Text>
-                </TouchableOpacity>
-              ))}
+             {SIDEBAR_ITEMS.map((item) => (
+  <TouchableOpacity
+    key={item.label}
+    style={styles.sidebarItem}
+    onPress={() => item.screen && navigation.navigate(item.screen, { barberiaId: barberia?.id })}
+  >
+    <Text style={[styles.sidebarText, item.active && styles.sidebarTextActive]}>
+      {item.label}
+    </Text>
+  </TouchableOpacity>
+))}
             </View>
 
             <TouchableOpacity style={styles.logoutBtn} onPress={handleLogout}>
@@ -146,13 +162,20 @@ const OwnerHomeScreen = ({ navigation }) => {
         {isLarge && (
           <View style={styles.sidebar}>
             <View style={styles.sidebarItems}>
-              {SIDEBAR_ITEMS.map((item) => (
-                <TouchableOpacity key={item.label} style={styles.sidebarItem}>
-                  <Text style={[styles.sidebarText, item.active && styles.sidebarTextActive]}>
-                    {item.label}
-                  </Text>
-                </TouchableOpacity>
-              ))}
+           {SIDEBAR_ITEMS.map((item) => (
+  <TouchableOpacity
+    key={item.label}
+    style={styles.drawerItem}
+    onPress={() => {
+      setDrawerVisible(false);
+      if (item.screen) navigation.navigate(item.screen, { barberiaId: barberia?.id });
+    }}
+  >
+    <Text style={[styles.drawerText, item.active && styles.drawerTextActive]}>
+      {item.label}
+    </Text>
+  </TouchableOpacity>
+))}
             </View>
 
             <TouchableOpacity style={styles.logoutBtn} onPress={handleLogout}>
@@ -198,12 +221,16 @@ const OwnerHomeScreen = ({ navigation }) => {
           </View>
 
           <Text style={styles.sectionTitle}>Accesos Directos</Text>
-          {ACCESOS_DIRECTOS.map((acc) => (
-            <TouchableOpacity key={acc.titulo} style={styles.accesoCard}>
-              <Text style={styles.accesoTitulo}>{acc.titulo}</Text>
-              <Text style={styles.accesoDesc}>{acc.desc}</Text>
-            </TouchableOpacity>
-          ))}
+         {ACCESOS_DIRECTOS.map((acc) => (
+  <TouchableOpacity
+    key={acc.titulo}
+    style={styles.accesoCard}
+    onPress={() => navigation.navigate(acc.screen, { barberiaId: barberia?.id })}
+  >
+    <Text style={styles.accesoTitulo}>{acc.titulo}</Text>
+    <Text style={styles.accesoDesc}>{acc.desc}</Text>
+  </TouchableOpacity>
+))}
 
         </ScrollView>
       </View>

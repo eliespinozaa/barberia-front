@@ -7,7 +7,7 @@ const createStyles = (width, theme) => {
 
   const NAVBAR        = '#0B1014';
   const CONTENT_MAX_W = isSmall ? '100%' : 560;
-  const IMAGE_BG       = '#D9D9D9';
+  const AVATAR_BG     = '#D9D9D9';
 
   const CARD_BG      = isDark ? 'rgba(255,255,255,0.04)' : '#F5F5F5';
   const INPUT_BG     = isDark ? '#1A2230' : '#FFFFFF';
@@ -21,7 +21,6 @@ const createStyles = (width, theme) => {
       backgroundColor: theme.colors.background,
     },
 
-    /* ── Header ── */
     header: {
       flexDirection:     'row',
       alignItems:        'center',
@@ -53,10 +52,7 @@ const createStyles = (width, theme) => {
       fontWeight: '700',
     },
 
-    /* ── Body ── */
-    body: {
-      flex: 1,
-    },
+    body: { flex: 1 },
     bodyInner: {
       padding:       isSmall ? 16 : 28,
       paddingBottom: 40,
@@ -67,17 +63,16 @@ const createStyles = (width, theme) => {
       maxWidth: CONTENT_MAX_W,
     },
 
-    /* ── Imagen del servicio (mismo patrón que el avatar de barbero) ── */
     avatarSection: {
       alignItems:   'center',
       marginTop:    isSmall ? 16 : 24,
       marginBottom: isSmall ? 18 : 26,
     },
     avatarWrap: {
-      width:           90,
-      height:          90,
-      borderRadius:    22,
-      backgroundColor: IMAGE_BG,
+      width:           80,
+      height:          80,
+      borderRadius:    40,
+      backgroundColor: AVATAR_BG,
       justifyContent:  'center',
       alignItems:      'center',
       marginBottom:    8,
@@ -93,7 +88,6 @@ const createStyles = (width, theme) => {
       fontWeight: '700',
     },
 
-    /* ── Card del formulario ── */
     card: {
       width:             '100%',
       backgroundColor:   CARD_BG,
@@ -138,12 +132,136 @@ const createStyles = (width, theme) => {
       fontSize: isSmall ? 13 : 14,
       ...(isWeb && { outlineWidth: 0 }),
     },
+    eyeBtn: {
+      flexShrink: 0,
+      padding:    4,
+      marginLeft: 6,
+    },
+
+    /* ── Dropdown (Rol / Barbería) ── */
+    dropdownTrigger: {
+      flexDirection:     'row',
+      alignItems:        'center',
+      justifyContent:    'space-between',
+      backgroundColor:   INPUT_BG,
+      borderColor:       INPUT_BORDER,
+      borderRadius:      24,
+      borderWidth:       1,
+      paddingHorizontal: 16,
+      height:            isSmall ? 42 : 46,
+    },
+    dropdownTriggerDisabled: {
+      opacity: 0.5,
+    },
+    dropdownTriggerText: {
+      color:      WHITE,
+      fontSize:   isSmall ? 13 : 14,
+      fontWeight: '600',
+    },
+    dropdownOverlay: {
+      flex:            1,
+      backgroundColor: 'rgba(0,0,0,0.3)',
+      justifyContent:  'center',
+      alignItems:      'center',
+    },
+    dropdownMenu: {
+      backgroundColor: isDark ? '#1A2230' : '#FFFFFF',
+      borderRadius:    14,
+      padding:         8,
+      minWidth:        220,
+      maxHeight:       320,
+      ...(isWeb && { boxShadow: '0px 8px 24px rgba(0,0,0,0.4)' }),
+    },
+    dropdownMenuItem: {
+      paddingHorizontal: 16,
+      paddingVertical:   12,
+      borderRadius:      10,
+    },
+    dropdownMenuItemText: {
+      color:      WHITE,
+      fontSize:   14,
+      fontWeight: '500',
+    },
 
     statusRow: {
       flexDirection:  'row',
       alignItems:     'center',
-      justifyContent: 'flex-end',
+      justifyContent: 'space-between',
       height:         isSmall ? 42 : 46,
+    },
+    statusLabel: {
+      color:      WHITE,
+      fontSize:   13,
+      fontWeight: '600',
+    },
+
+    /* ── Botón "Restablecer contraseña" ── */
+    resetBtn: {
+      flexDirection:   'row',
+      alignItems:      'center',
+      justifyContent:  'center',
+      backgroundColor: isDark ? '#FFFFFF' : '#1A1A1A',
+      borderRadius:    24,
+      height:          isSmall ? 42 : 46,
+    },
+    resetBtnText: {
+      color:      isDark ? '#1A1A1A' : '#FFFFFF',
+      fontSize:   13,
+      fontWeight: '700',
+    },
+
+    strengthWrap: {
+      flexDirection: 'row',
+      alignItems:    'center',
+      gap:           8,
+      marginTop:     8,
+    },
+    strengthBarTrack: {
+      flex:            1,
+      height:          6,
+      borderRadius:    3,
+      backgroundColor: isDark ? 'rgba(255,255,255,0.15)' : '#E0E0E0',
+      overflow:        'hidden',
+    },
+    strengthBarFill: {
+      height:       '100%',
+      borderRadius: 3,
+    },
+    strengthLabel: {
+      fontSize:   12,
+      fontWeight: '700',
+      minWidth:   55,
+      textAlign:  'right',
+    },
+    requirementsGrid: {
+      flexDirection: 'row',
+      flexWrap:      'wrap',
+      marginTop:     8,
+      gap:           6,
+    },
+    requirementItem: {
+      flexDirection: 'row',
+      alignItems:    'center',
+      gap:           4,
+      width:         '48%',
+    },
+    requirementText: {
+      fontSize:   11,
+      color:      MUTED,
+      fontWeight: '600',
+    },
+    requirementTextMet: {
+      color: '#22C55E',
+    },
+    matchRow: {
+      flexDirection: 'row',
+      alignItems:    'center',
+      gap:           6,
+      marginTop:     6,
+    },
+    matchText: {
+      fontSize:   12,
+      fontWeight: '600',
     },
 
     btn: {

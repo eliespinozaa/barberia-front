@@ -72,7 +72,7 @@ const BarberHomeScreen = ({ navigation }) => {
   };
 
   return (
-    <SafeAreaView style={styles.container} edges={['top']}>
+    <SafeAreaView style={styles.container} edges={["top", "bottom", "left", "right"]}>
 
       {/* ── Navbar ── */}
       <View style={styles.navbar}>

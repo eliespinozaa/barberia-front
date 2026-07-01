@@ -22,6 +22,7 @@ const EditarServicioScreen = ({ navigation, route }) => {
   const { width } = useWindowDimensions();
   const { theme } = useTheme();
   const styles = createStyles(width, theme);
+  const isDark = theme.mode === 'dark';
 
   const { servicio, barberiaId } = route?.params || {};
   const esEdicion = !!servicio;
@@ -67,7 +68,7 @@ const EditarServicioScreen = ({ navigation, route }) => {
       base64: true,
     });
 
-    if (resultadoPicker.canceled) return;
+    if (resultadoPicker.canceled || !resultadoPicker.assets?.length) return;
 
     const asset = resultadoPicker.assets[0];
     const base64Img = asset.base64
@@ -140,7 +141,7 @@ const EditarServicioScreen = ({ navigation, route }) => {
   };
 
   return (
-    <SafeAreaView style={styles.container} edges={['top']}>
+    <SafeAreaView style={styles.container} edges={["top", "bottom", "left", "right"]}>
       {/* ── Header ── */}
       <View style={styles.header}>
         <TouchableOpacity style={styles.backBtn} onPress={() => navigation.goBack()}>
@@ -148,7 +149,7 @@ const EditarServicioScreen = ({ navigation, route }) => {
         </TouchableOpacity>
         <View style={styles.headerPill}>
           <Text style={styles.headerTitle}>
-            {esEdicion ? 'Editar servicio' : 'Nuevo servicio'}
+            {esEdicion ? 'Editar' : 'Nuevo'}
           </Text>
         </View>
       </View>
@@ -159,73 +160,92 @@ const EditarServicioScreen = ({ navigation, route }) => {
         showsVerticalScrollIndicator={false}
       >
         <View style={styles.contentWrap}>
+
           {/* ── Imagen ── */}
-          <TouchableOpacity style={styles.imagePicker} onPress={seleccionarImagen}>
-            {imagen ? (
-              <Image source={{ uri: imagen }} style={styles.imagePreview} />
-            ) : (
-              <View style={styles.imagePlaceholder}>
-                <Ionicons name="camera-outline" size={28} color="#9CA3AF" />
-                <Text style={styles.imagePlaceholderText}>Agregar imagen</Text>
-              </View>
-            )}
-          </TouchableOpacity>
-
-          {/* ── Nombre ── */}
-          <Text style={styles.label}>Nombre del servicio</Text>
-          <TextInput
-            style={styles.input}
-            value={nombre}
-            onChangeText={setNombre}
-            placeholder="Ej. Corte clásico"
-            placeholderTextColor={styles.placeholderColor}
-          />
-
-          {/* ── Descripción ── */}
-          <Text style={styles.label}>Descripción</Text>
-          <TextInput
-            style={[styles.input, styles.inputMultiline]}
-            value={descripcion}
-            onChangeText={setDescripcion}
-            placeholder="Breve descripción del servicio"
-            placeholderTextColor={styles.placeholderColor}
-            multiline
-            numberOfLines={3}
-          />
-
-          {/* ── Precio ── */}
-          <Text style={styles.label}>Precio</Text>
-          <TextInput
-            style={styles.input}
-            value={precio}
-            onChangeText={setPrecio}
-            placeholder="0.00"
-            placeholderTextColor={styles.placeholderColor}
-            keyboardType="decimal-pad"
-          />
-
-          {/* ── Estado activo/inactivo ── */}
-          <View style={styles.column}>
-            <Text style={styles.label}>Estatus:</Text>
-            <View style={styles.statusRow}>
-              <Text style={styles.statusLabel}>
-                {activo ? 'Activo' : 'Inactivo'}
-              </Text>
-              <Switch
-                value={activo}
-                onValueChange={setActivo}
-                trackColor={{ false: '#3A3A3A', true: '#22C55E' }}
-                thumbColor="#FFFFFF"
-              />
-            </View>
+          <View style={styles.avatarSection}>
+            <TouchableOpacity style={styles.avatarWrap} onPress={seleccionarImagen}>
+              {imagen ? (
+                <Image source={{ uri: imagen }} style={styles.avatarImage} />
+              ) : (
+                <Ionicons name="cut-outline" size={30} color="#9CA3AF" />
+              )}
+            </TouchableOpacity>
+            <TouchableOpacity onPress={seleccionarImagen}>
+              <Text style={styles.avatarLabel}>Cambiar</Text>
+            </TouchableOpacity>
           </View>
 
-          {/* ── Botón guardar ── */}
-          <TouchableOpacity style={styles.saveBtn} onPress={handleGuardar}>
-            <Text style={styles.saveBtnText}>
-              {esEdicion ? 'Guardar cambios' : 'Crear servicio'}
-            </Text>
-          </TouchableOpacity>
+          {/* ── Card del formulario ── */}
+          <View style={styles.card}>
+            <View style={styles.formGrid}>
+
+              <View style={styles.column}>
+                <Text style={styles.label}>Nombre del servicio</Text>
+                <View style={styles.inputRow}>
+                  <TextInput
+                    style={styles.input}
+                    placeholder="Ej. Corte clásico"
+                    placeholderTextColor={isDark ? 'rgba(255,255,255,0.4)' : '#999'}
+                    value={nombre}
+                    onChangeText={setNombre}
+                  />
+                </View>
+              </View>
+
+              <View style={styles.column}>
+                <Text style={styles.label}>Precio</Text>
+                <View style={styles.inputRow}>
+                  <TextInput
+                    style={styles.input}
+                    placeholder="0.00"
+                    placeholderTextColor={isDark ? 'rgba(255,255,255,0.4)' : '#999'}
+                    value={precio}
+                    onChangeText={setPrecio}
+                    keyboardType="decimal-pad"
+                  />
+                </View>
+              </View>
+
+              <View style={styles.column}>
+                <Text style={styles.label}>Descripción</Text>
+                <View style={styles.inputRow}>
+                  <TextInput
+                    style={styles.input}
+                    placeholder="Breve descripción del servicio"
+                    placeholderTextColor={isDark ? 'rgba(255,255,255,0.4)' : '#999'}
+                    value={descripcion}
+                    onChangeText={setDescripcion}
+                  />
+                </View>
+              </View>
+
+              <View style={styles.column}>
+                <Text style={styles.label}>Estatus:</Text>
+                <View style={styles.statusRow}>
+                  <Switch
+                    value={activo}
+                    onValueChange={setActivo}
+                    trackColor={{ false: '#3A3A3A', true: '#22C55E' }}
+                    thumbColor="#FFFFFF"
+                  />
+                </View>
+              </View>
+
+            </View>
+
+            <TouchableOpacity
+              style={[styles.btn, guardando && { opacity: 0.6 }]}
+              onPress={handleGuardar}
+              disabled={guardando}
+            >
+              <Text style={styles.btnText}>
+                {guardando
+                  ? (esEdicion ? 'Actualizando...' : 'Creando...')
+                  : (esEdicion ? 'Actualizar' : 'Crear')}
+              </Text>
+            </TouchableOpacity>
+          </View>
+
         </View>
       </ScrollView>
 

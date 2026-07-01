@@ -7,13 +7,12 @@ const createStyles = (width, theme) => {
 
   const NAVBAR        = '#0B1014';
   const CONTENT_MAX_W = isSmall ? '100%' : 560;
-  const IMAGE_BG       = '#D9D9D9';
-
-  const CARD_BG      = isDark ? 'rgba(255,255,255,0.04)' : '#F5F5F5';
-  const INPUT_BG     = isDark ? '#1A2230' : '#FFFFFF';
-  const INPUT_BORDER = isDark ? 'rgba(255,255,255,0.1)' : '#D8D8D8';
-  const WHITE        = isDark ? '#FFFFFF' : '#1A1A1A';
-  const MUTED        = isDark ? 'rgba(255,255,255,0.5)' : 'rgba(0,0,0,0.5)';
+  const AVATAR_BG     = isDark ? 'rgba(255,255,255,0.08)' : '#D9D9D9';
+  const CARD_BG       = isDark ? 'rgba(255,255,255,0.04)' : '#F5F5F5';
+  const INPUT_BG      = isDark ? '#1A2230' : '#FFFFFF';
+  const INPUT_BORDER  = isDark ? 'rgba(255,255,255,0.1)' : '#D8D8D8';
+  const WHITE         = isDark ? '#FFFFFF' : '#1A1A1A';
+  const MUTED         = isDark ? 'rgba(255,255,255,0.5)' : 'rgba(0,0,0,0.5)';
 
   return StyleSheet.create({
     container: {
@@ -67,17 +66,17 @@ const createStyles = (width, theme) => {
       maxWidth: CONTENT_MAX_W,
     },
 
-    /* ── Imagen del servicio (mismo patrón que el avatar de barbero) ── */
+    /* ── Avatar / imagen ── */
     avatarSection: {
       alignItems:   'center',
       marginTop:    isSmall ? 16 : 24,
       marginBottom: isSmall ? 18 : 26,
     },
     avatarWrap: {
-      width:           90,
-      height:          90,
-      borderRadius:    22,
-      backgroundColor: IMAGE_BG,
+      width:           80,
+      height:          80,
+      borderRadius:    16,
+      backgroundColor: AVATAR_BG,
       justifyContent:  'center',
       alignItems:      'center',
       marginBottom:    8,
@@ -93,7 +92,7 @@ const createStyles = (width, theme) => {
       fontWeight: '700',
     },
 
-    /* ── Card del formulario ── */
+    /* ── Card ── */
     card: {
       width:             '100%',
       backgroundColor:   CARD_BG,
@@ -101,9 +100,14 @@ const createStyles = (width, theme) => {
       paddingHorizontal: isSmall ? 16 : 24,
       paddingTop:        isSmall ? 18 : 24,
       paddingBottom:     isSmall ? 16 : 22,
-      ...(isWeb && { boxShadow: isDark ? '0px 4px 20px rgba(0,0,0,0.3)' : '0px 4px 20px rgba(0,0,0,0.1)' }),
+      ...(isWeb && {
+        boxShadow: isDark
+          ? '0px 4px 20px rgba(0,0,0,0.3)'
+          : '0px 4px 20px rgba(0,0,0,0.1)',
+      }),
     },
 
+    /* ── Grid ── */
     formGrid: {
       flexDirection:  'row',
       flexWrap:       'wrap',
@@ -114,6 +118,7 @@ const createStyles = (width, theme) => {
       marginBottom: isSmall ? 14 : 18,
     },
 
+    /* ── Campos ── */
     label: {
       color:        WHITE,
       fontSize:     13,
@@ -139,18 +144,24 @@ const createStyles = (width, theme) => {
       ...(isWeb && { outlineWidth: 0 }),
     },
 
+    /* ── Switch / Estatus ── */
     statusRow: {
       flexDirection:  'row',
       alignItems:     'center',
-      justifyContent: 'flex-end',
+      justifyContent: 'space-between',
       height:         isSmall ? 42 : 46,
     },
+    statusLabel: {
+      color:      WHITE,
+      fontSize:   13,
+      fontWeight: '600',
+    },
 
+    /* ── Botón principal ── */
     btn: {
       flexDirection:   'row',
       alignItems:      'center',
       justifyContent:  'center',
-      gap:             8,
       backgroundColor: isDark ? '#FFFFFF' : '#1A1A1A',
       borderRadius:    24,
       height:          isSmall ? 46 : 50,
@@ -163,6 +174,86 @@ const createStyles = (width, theme) => {
       fontSize:      isSmall ? 14 : 15,
       fontWeight:    '700',
       letterSpacing: 0.2,
+    },
+
+    /* ── Botón inactivar ── */
+    btnInactivar: {
+      alignItems:    'center',
+      justifyContent:'center',
+      height:         isSmall ? 42 : 46,
+      marginTop:      10,
+      alignSelf:      'center',
+      width:          isSmall ? '100%' : 240,
+    },
+    btnInactivarText: {
+      color:      '#EF4444',
+      fontSize:   13,
+      fontWeight: '700',
+    },
+
+    /* ── Modal: confirmar inactivar ── */
+    modalOverlay: {
+      flex:              1,
+      backgroundColor:   'rgba(0,0,0,0.6)',
+      justifyContent:    'center',
+      alignItems:        'center',
+      paddingHorizontal: 24,
+    },
+    modalCard: {
+      backgroundColor:   '#1A2230',
+      borderRadius:      20,
+      paddingTop:        32,
+      paddingBottom:     20,
+      paddingHorizontal: 22,
+      width:             '100%',
+      maxWidth:          320,
+      alignItems:        'center',
+      ...(isWeb && { boxShadow: '0px 12px 32px rgba(0,0,0,0.5)' }),
+    },
+    modalCloseBtn: {
+      position: 'absolute',
+      top:      14,
+      right:    14,
+      padding:  4,
+    },
+    modalMessage: {
+      color:        '#FFFFFF',
+      fontSize:     15,
+      fontWeight:   '700',
+      textAlign:    'center',
+      lineHeight:   22,
+      marginBottom: 24,
+    },
+    modalActions: {
+      flexDirection: 'row',
+      gap:           12,
+      width:         '100%',
+    },
+    modalBtnCancel: {
+      flex:              1,
+      backgroundColor:   'transparent',
+      borderWidth:       1,
+      borderColor:       'rgba(255,255,255,0.3)',
+      borderRadius:      20,
+      paddingVertical:   11,
+      alignItems:        'center',
+    },
+    modalBtnCancelText: {
+      color:      '#FFFFFF',
+      fontSize:   13,
+      fontWeight: '600',
+    },
+    modalBtnConfirm: {
+      flex:              1,
+      backgroundColor:   '#FFFFFF',
+      borderRadius:      20,
+      paddingVertical:   11,
+      alignItems:        'center',
+    },
+    modalBtnConfirmText: {
+      color:      '#1A1A1A',
+      fontSize:   13,
+      fontWeight: '700',
     },
   });
 };

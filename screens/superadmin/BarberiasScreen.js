@@ -271,7 +271,7 @@ const confirmarEliminar = async () => {
 };
 
   return (
-    <SafeAreaView style={styles.container} edges={['top']}>
+    <SafeAreaView style={styles.container} edges={["top", "bottom", "left", "right"]}>
 
       {/* ── Header ── */}
       <View style={styles.header}>

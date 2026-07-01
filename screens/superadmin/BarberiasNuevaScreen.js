@@ -72,24 +72,29 @@ useEffect(() => {
   cargarDuenos();
 }, []);
 
-  const handleCambiarFoto = async () => {
-    const permiso = await ImagePicker.requestMediaLibraryPermissionsAsync();
-    if (!permiso.granted) {
-      Alert.alert('Permiso requerido', 'Necesitamos acceso a tu galería para elegir una imagen.');
-      return;
-    }
+const handleCambiarFoto = async () => {
+  const permiso = await ImagePicker.requestMediaLibraryPermissionsAsync();
+  if (!permiso.granted) {
+    Alert.alert('Permiso requerido', 'Necesitamos acceso a tu galería para elegir una imagen.');
+    return;
+  }
 
-    const resultado = await ImagePicker.launchImageLibraryAsync({
-      mediaTypes: ImagePicker.MediaTypeOptions.Images,
-      allowsEditing: true,
-      aspect: [1, 1],
-      quality: 0.7,
-    });
+  const resultado = await ImagePicker.launchImageLibraryAsync({
+    mediaTypes: ImagePicker.MediaTypeOptions.Images,
+    allowsEditing: true,
+    aspect: [1, 1],
+    quality: 0.7,
+    base64: true,   // 👈 agregar esto
+  });
 
-    if (!resultado.canceled && resultado.assets?.length > 0) {
-      setFoto(resultado.assets[0].uri);
-    }
-  };
+  if (!resultado.canceled && resultado.assets?.length > 0) {
+    const asset = resultado.assets[0];
+    const base64Img = asset.base64
+      ? `data:image/jpeg;base64,${asset.base64}`
+      : asset.uri;
+    setFoto(base64Img);
+  }
+};
 
 
 const handleGuardar = async () => {
@@ -106,14 +111,13 @@ const handleGuardar = async () => {
   setCargando(true);
 
   try {
-    const imagenBase64 = await convertirImagenABase64(foto);
 
     const payload = {
       nombre: nombre.trim(),
       telefono: telefono.trim(),
       direccion: direccion.trim(),
       estado: estatus ? 1 : 0,
-      imagen: imagenBase64,
+      imagen: foto,
       idUsuario: propietarioId,
     };
 
@@ -157,8 +161,6 @@ const handleGuardar = async () => {
 };
 
 
-  // Se ejecuta al cerrar el modal de resultado.
-  // Si fue éxito, navega de regreso entregando los datos; si fue error, solo cierra el modal.
   const handleCerrarResultado = () => {
     const fueExito = resultado.type === 'success';
     setResultado({ visible: false, type: 'success', message: '' });
@@ -172,29 +174,10 @@ const handleGuardar = async () => {
     }
   };
 
-  const convertirImagenABase64 = async (uri) => {
-  if (!uri || uri.startsWith('http') || uri.startsWith('data:')) {
-    return uri;
-  }
-
-  try {
-    const response = await fetch(uri);
-    const blob = await response.blob();
-
-    return await new Promise((resolve, reject) => {
-      const reader = new FileReader();
-      reader.onloadend = () => resolve(reader.result); 
-      reader.onerror = reject;
-      reader.readAsDataURL(blob);
-    });
-  } catch (error) {
-    console.error('Error al convertir imagen:', error);
-    return null;
-  }
-};
+  
 
   return (
-    <SafeAreaView style={styles.container} edges={['top']}>
+    <SafeAreaView style={styles.container} edges={["top", "bottom", "left", "right"]}>
 
       {/* ── Header ── */}
       <View style={styles.header}>

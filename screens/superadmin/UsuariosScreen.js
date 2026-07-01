@@ -6,6 +6,7 @@ import {
   TouchableOpacity,
   TextInput,
   Modal,
+  Image,
   Platform,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
@@ -35,6 +36,8 @@ const UsuariosScreen = ({ navigation }) => {
   const { theme }  = useTheme();
   const styles     = createStyles(width, theme);
   const isSmall    = width < 768;
+  const iconColor  = theme.mode === 'dark' ? '#FFFFFF' : '#1A1A1A';
+  const mutedIcon  = theme.mode === 'dark' ? 'rgba(255,255,255,0.3)' : 'rgba(0,0,0,0.25)';  
 
   const [usuarios, setUsuarios]       = useState([]);
   const [cargando, setCargando]       = useState(true);
@@ -56,6 +59,7 @@ const UsuariosScreen = ({ navigation }) => {
   // ── Eliminar ──
   const [usuarioAEliminar, setUsuarioAEliminar] = useState(null);
   const [eliminando,       setEliminando]       = useState(false);
+const [usuarioDetalle, setUsuarioDetalle] = useState(null);
 
   const [resultado, setResultado] = useState({
     visible: false, type: 'success', title: '', message: '',
@@ -97,14 +101,43 @@ const UsuariosScreen = ({ navigation }) => {
     [filtroNombre, filtroCorreo, filtroRol, filtroTelefono, filtroEstado]);
 
   const confirmarEliminar = async () => {
-    if (!usuarioAEliminar) return;
-    setEliminando(true);
-    // TODO: conectar endpoint eliminar
-    setEliminando(false);
+  if (!usuarioAEliminar) return;
+  setEliminando(true);
+
+  const res = await usuariosAPI.eliminar(usuarioAEliminar.id);
+
+  setEliminando(false);
+
+  if (!res.success) {
     setUsuarioAEliminar(null);
-    setResultado({ visible: true, type: 'success', title: '¡Listo!',
-      message: 'El usuario se eliminó correctamente.' });
-  };
+    setResultado({
+      visible: true,
+      type: 'error',
+      title: 'No se pudo eliminar',
+      message: res.error || 'Ocurrió un error al eliminar el usuario.',
+    });
+    return;
+  }
+
+  setUsuarios((prev) => prev.filter((u) => u.id !== usuarioAEliminar.id));
+  setUsuarioAEliminar(null);
+  setResultado({
+    visible: true,
+    type: 'success',
+    title: '¡Listo!',
+    message: 'El usuario se eliminó correctamente.',
+  });
+};
+
+const formatearFecha = (fechaISO) => {
+  if (!fechaISO) return 'N/A';
+  const fecha = new Date(fechaISO);
+  if (Number.isNaN(fecha.getTime())) return 'N/A';
+  const dia = String(fecha.getDate()).padStart(2, '0');
+  const mes = String(fecha.getMonth() + 1).padStart(2, '0');
+  const anio = fecha.getFullYear();
+  return `${dia}-${mes}-${anio}`;
+};
 
   const generarPaginas = () => {
     const paginas = [];
@@ -130,7 +163,7 @@ const UsuariosScreen = ({ navigation }) => {
           onPress={() => setPagina(1)}
           disabled={paginaActual === 1}
         >
-          <Ionicons name="play-skip-back" size={14} color="#FFFFFF" />
+          <Ionicons name="play-skip-back" size={14} color={iconColor} />
         </TouchableOpacity>
 
         {generarPaginas().map((p) => (
@@ -150,7 +183,7 @@ const UsuariosScreen = ({ navigation }) => {
           onPress={() => setPagina(totalPaginas)}
           disabled={paginaActual === totalPaginas}
         >
-          <Ionicons name="play-skip-forward" size={14} color="#FFFFFF" />
+          <Ionicons name="play-skip-forward" size={14} color={iconColor} />
         </TouchableOpacity>
       </View>
     </View>
@@ -166,27 +199,26 @@ const UsuariosScreen = ({ navigation }) => {
   );
 
   // ── Acciones (reutilizables) ──
-  const AccionesUsuario = ({ u }) => (
-    <View style={styles.accionesRow}>
-      <Tooltip label="Ver">
-        <TouchableOpacity style={styles.accionBtn}
-          onPress={() => navigation.navigate('DetalleUsuarioScreen', { usuarioId: u.id })}>
-          <Ionicons name="eye-outline" size={22} color="#FFFFFF" />
-        </TouchableOpacity>
-      </Tooltip>
-      <Tooltip label="Editar">
-        <TouchableOpacity style={styles.accionBtn}
-          onPress={() => navigation.navigate('EditarUsuarioScreen', { usuario: u })}>
-          <Feather name="edit-2" size={20} color="#FFFFFF" />
-        </TouchableOpacity>
-      </Tooltip>
-      <Tooltip label="Eliminar">
-        <TouchableOpacity style={styles.accionBtn} onPress={() => setUsuarioAEliminar(u)}>
-          <Ionicons name="close-circle-outline" size={24} color="#FFFFFF" />
-        </TouchableOpacity>
-      </Tooltip>
-    </View>
-  );
+ const AccionesUsuario = ({ u }) => (
+  <View style={styles.accionesRow}>
+    <Tooltip label="Ver">
+      <TouchableOpacity style={styles.accionBtn} onPress={() => setUsuarioDetalle(u)}>
+        <Ionicons name="eye-outline" size={22} color={iconColor} />
+      </TouchableOpacity>
+    </Tooltip>
+    <Tooltip label="Editar">
+      <TouchableOpacity style={styles.accionBtn}
+        onPress={() => navigation.navigate('EditarUsuarioScreen', { usuario: u })}>
+        <Feather name="edit-2" size={20} color={iconColor} />
+      </TouchableOpacity>
+    </Tooltip>
+    <Tooltip label="Eliminar">
+      <TouchableOpacity style={styles.accionBtn} onPress={() => setUsuarioAEliminar(u)}>
+        <Ionicons name="close-circle-outline" size={24} color={iconColor} />
+      </TouchableOpacity>
+    </Tooltip>
+  </View>
+);
 
   // ════════════════════════════
   //  RENDER MÓVIL
@@ -215,20 +247,20 @@ const UsuariosScreen = ({ navigation }) => {
         contentContainerStyle={styles.mobileFiltersRow}>
         <TouchableOpacity style={styles.mobileFilterPill}
           onPress={() => { setDropRolVisible(true); setDropEstadoVisible(false); }}>
-          <Ionicons name="people-outline" size={14} color="#FFFFFF" />
+          <Ionicons name="people-outline" size={14} color={iconColor} />
           <Text style={styles.mobileFilterPillText}>
             {filtroRol === 'Todas' ? 'Rol' : ROL_LABEL[filtroRol] || filtroRol}
           </Text>
-          <Ionicons name="chevron-down" size={12} color="#FFFFFF" />
+          <Ionicons name="chevron-down" size={12} color={iconColor} />
         </TouchableOpacity>
 
         <TouchableOpacity style={styles.mobileFilterPill}
           onPress={() => { setDropEstadoVisible(true); setDropRolVisible(false); }}>
-          <Ionicons name="ellipse-outline" size={14} color="#FFFFFF" />
+          <Ionicons name="ellipse-outline" size={14} color={iconColor} />
           <Text style={styles.mobileFilterPillText}>
             {filtroEstado === 'Todos' ? 'Estado' : filtroEstado}
           </Text>
-          <Ionicons name="chevron-down" size={12} color="#FFFFFF" />
+          <Ionicons name="chevron-down" size={12} color={iconColor} />
         </TouchableOpacity>
 
         {/* Reset filtros */}
@@ -248,7 +280,7 @@ const UsuariosScreen = ({ navigation }) => {
         </View>
       ) : usuariosPagina.length === 0 ? (
         <View style={styles.emptyState}>
-          <Ionicons name="people-outline" size={36} color="rgba(255,255,255,0.3)" />
+          <Ionicons name="people-outline" size={36} color={mutedIcon} />
           <Text style={styles.emptyText}>No hay usuarios</Text>
         </View>
       ) : (
@@ -379,7 +411,7 @@ const UsuariosScreen = ({ navigation }) => {
   );
 
   return (
-    <SafeAreaView style={styles.container} edges={['top']}>
+    <SafeAreaView style={styles.container} edges={["top", "bottom", "left", "right"]}>
       {/* ── Header ── */}
       <View style={styles.header}>
         <View style={styles.headerSide}>
@@ -400,7 +432,7 @@ const UsuariosScreen = ({ navigation }) => {
         <Tooltip label="Agregar usuario">
           <TouchableOpacity style={styles.addBtn}
             onPress={() => navigation.navigate('EditarUsuarioScreen')}>
-            <Ionicons name="add" size={24} color="#FFFFFF" />
+            <Ionicons name="add" size={24} color={iconColor} />
           </TouchableOpacity>
         </Tooltip>
       </View>
@@ -414,6 +446,7 @@ const UsuariosScreen = ({ navigation }) => {
       </ScrollView>
 
       {/* ── Dropdown Rol ── */}
+      {dropRolVisible && (
       <Modal transparent visible={dropRolVisible} animationType="fade"
         onRequestClose={() => setDropRolVisible(false)}>
         <TouchableOpacity style={styles.dropOverlay} activeOpacity={1}
@@ -431,8 +464,10 @@ const UsuariosScreen = ({ navigation }) => {
           </View>
         </TouchableOpacity>
       </Modal>
+)}
 
       {/* ── Dropdown Estado ── */}
+      {dropEstadoVisible && (
       <Modal transparent visible={dropEstadoVisible} animationType="fade"
         onRequestClose={() => setDropEstadoVisible(false)}>
         <TouchableOpacity style={styles.dropOverlay} activeOpacity={1}
@@ -450,18 +485,19 @@ const UsuariosScreen = ({ navigation }) => {
           </View>
         </TouchableOpacity>
       </Modal>
+)}
 
       {/* ── Modal eliminar ── */}
+      {!!usuarioAEliminar && (
       <Modal transparent visible={!!usuarioAEliminar} animationType="fade"
         onRequestClose={() => setUsuarioAEliminar(null)}>
         <View style={styles.modalOverlay}>
           <View style={styles.modalCard}>
             <View style={styles.modalHeader}>
               <Text style={styles.modalTitle}>Eliminar usuario</Text>
-              <TouchableOpacity style={styles.modalCloseBtn}
-                onPress={() => setUsuarioAEliminar(null)}>
-                <Ionicons name="close" size={18} color="#FFFFFF" />
-              </TouchableOpacity>
+              <TouchableOpacity style={styles.modalCloseBtn} onPress={() => setUsuarioAEliminar(null)}>
+  <Ionicons name="close" size={18} color={iconColor} />
+</TouchableOpacity>
             </View>
             <Text style={styles.modalMessage}>
               ¿Estás seguro que deseas eliminar a{' '}
@@ -482,7 +518,77 @@ const UsuariosScreen = ({ navigation }) => {
           </View>
         </View>
       </Modal>
+)}
 
+      {/* ── Modal: detalle de usuario ── */}
+{!!usuarioDetalle && (
+  <Modal
+    transparent
+    visible
+    animationType="fade"
+    onRequestClose={() => setUsuarioDetalle(null)}
+  >
+  <View style={styles.detalleOverlay}>
+    <View style={styles.detalleCard}>
+      <TouchableOpacity style={styles.detalleCloseBtn} onPress={() => setUsuarioDetalle(null)}>
+  <Ionicons name="close" size={20} color={iconColor} />
+</TouchableOpacity>
+
+      <View style={styles.detalleAvatar}>
+        {usuarioDetalle?.fotoPerfil ? (
+          <Image
+            source={{ uri: usuarioDetalle.fotoPerfil }}
+            style={styles.detalleAvatarImage}
+          />
+        ) : (
+          <Ionicons name="person" size={36} color="#9CA3AF" />
+        )}
+      </View>
+
+      <Text style={styles.detalleNombre}>
+        {usuarioDetalle?.nombre} {usuarioDetalle?.apellido}
+      </Text>
+
+      <View style={styles.detalleLine}>
+        <Text style={styles.detalleLabel}>Email:</Text>
+        <Text style={styles.detalleValue}>{usuarioDetalle?.email}</Text>
+      </View>
+
+      <View style={styles.detalleLine}>
+        <Text style={styles.detalleLabel}>Telefono:</Text>
+        <Text style={styles.detalleValue}>{usuarioDetalle?.telefono || '—'}</Text>
+      </View>
+
+      <View style={styles.detalleLine}>
+        <Text style={styles.detalleLabel}>Rol:</Text>
+        <Text style={styles.detalleValue}>
+          {ROL_LABEL[usuarioDetalle?.rol] || usuarioDetalle?.rol}
+        </Text>
+      </View>
+
+      <View style={styles.detalleLine}>
+        <Text style={styles.detalleLabel}>Estado:</Text>
+        <View
+          style={[
+            styles.detalleEstadoDot,
+            usuarioDetalle?.estado !== 1 && styles.detalleEstadoDotOff,
+          ]}
+        />
+        <Text style={styles.detalleValue}>
+          {usuarioDetalle?.estado === 1 ? 'Activo' : 'Inactivo'}
+        </Text>
+      </View>
+
+      <View style={styles.detalleLine}>
+        <Text style={styles.detalleLabel}>Fecha Registro:</Text>
+        <Text style={styles.detalleValue}>
+          {formatearFecha(usuarioDetalle?.createdAt)}
+        </Text>
+      </View>
+    </View>
+  </View>
+</Modal>
+)}
       <LoadingOverlay visible={cargando}   message="Cargando usuarios..." />
       <LoadingOverlay visible={eliminando} message="Eliminando usuario..." />
       <ResultModal

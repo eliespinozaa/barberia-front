@@ -1,4 +1,4 @@
-import React, { useState, useMemo } from 'react';
+import React, { useState, useEffect, useMemo, useCallback } from 'react';
 import {
   View,
   Text,
@@ -6,19 +6,17 @@ import {
   TouchableOpacity,
   TextInput,
   Image,
-  Switch,
-  Alert
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import { useWindowDimensions } from 'react-native';
+import { useFocusEffect } from '@react-navigation/native';
 import { useTheme } from '../../context/ThemeContext';
-import { CommonActions } from '@react-navigation/native';
-import createStyles from '../../styles/superadmin/EditarBarberoStyles';
+import createStyles from '../../styles/superadmin/EditarUsuarioStyles';
 import * as ImagePicker from 'expo-image-picker';
 import LoadingOverlay from '../../components/LoadingOverlay';
 import ResultModal from '../../components/ResultModal';
-import { usuariosAPI, barberoAPI } from '../../config/api';
+import { usuariosAPI, tokenManager } from '../../config/api';
 
 const RequirementItem = ({ met, label, styles }) => (
   <View style={styles.requirementItem}>
@@ -33,35 +31,23 @@ const RequirementItem = ({ met, label, styles }) => (
   </View>
 );
 
-const EditarBarberoScreen = ({ navigation, route }) => {
+const PerfilScreen = ({ navigation }) => {
   const { width } = useWindowDimensions();
   const { theme } = useTheme();
   const styles = createStyles(width, theme);
   const isDark = theme.mode === 'dark';
 
-  const barberoParam = route?.params?.barbero;
-  const barberiaId = route?.params?.barberiaId;
-  const esCreacion = !barberoParam;
+  const [cargando, setCargando] = useState(true);
+  const [loading, setLoading] = useState(false);
 
-  const barbero = barberoParam || {
-    nombre: '',
-    correo: '',
-    telefono: '',
-    foto: null,
-    activo: true,
-  };
+  const [usuarioId, setUsuarioId] = useState(null);
+  const [nombreCompleto, setNombreCompleto] = useState('');
+  const [correo, setCorreo] = useState('');
+  const [telefono, setTelefono] = useState('');
+  const [foto, setFoto] = useState(null);
 
-  const [nombre, setNombre] = useState(barbero.nombre);
-  const [correo, setCorreo] = useState(barbero.correo);
-  const [telefono, setTelefono] = useState(barbero.telefono);
-  const [estatus, setEstatus] = useState(barbero.activo);
-  const [foto, setFoto] = useState(barbero.foto);
-  // Ya no usamos un state aparte "fotoBase64": la conversión a base64
-  // se hace al momento de enviar (handleCrear / handleActualizar),
-  // tomando siempre el valor actual de "foto" como única fuente de verdad.
-
-  // En edición es opcional cambiar password; en creación siempre se pide
-  const [cambiarPassword, setCambiarPassword] = useState(esCreacion);
+  // ── Password ──
+  const [mostrarPassword, setMostrarPassword] = useState(false);
   const [passwordActual, setPasswordActual] = useState('');
   const [nuevaPassword, setNuevaPassword] = useState('');
   const [confirmarPassword, setConfirmarPassword] = useState('');
@@ -75,7 +61,6 @@ const EditarBarberoScreen = ({ navigation, route }) => {
     number: /[0-9]/.test(nuevaPassword),
     special: /[^A-Za-z0-9]/.test(nuevaPassword),
   };
-
   const strengthScore = Object.values(passwordChecks).filter(Boolean).length;
 
   const strengthInfo = useMemo(() => {
@@ -87,96 +72,83 @@ const EditarBarberoScreen = ({ navigation, route }) => {
   }, [nuevaPassword, strengthScore]);
 
   const passwordsMatch = confirmarPassword.length > 0 && nuevaPassword === confirmarPassword;
-  const [loading, setLoading] = useState(false);
 
   const [resultado, setResultado] = useState({
-    visible: false,
-    type: 'success',
-    title: '',
-    message: '',
-    payloadExtra: null,
+    visible: false, type: 'success', title: '', message: '',
   });
 
   const cerrarResultado = () => {
-    const fueExito = resultado.type === 'success';
-    const datosExtra = resultado.payloadExtra;
-    setResultado((prev) => ({ ...prev, visible: false }));
+  const fueExito = resultado.type === 'success';
+  setResultado((prev) => ({ ...prev, visible: false }));
+  if (fueExito) cargarPerfil();
+};
 
-    if (!fueExito) return;
+  // ── Carga del perfil ──
+  const cargarPerfil = useCallback(async () => {
+    setCargando(true);
+    const userLocal = await tokenManager.getUser();
+    if (!userLocal?.id) {
+      setCargando(false);
+      return;
+    }
+    const res = await usuariosAPI.obtenerPorId(userLocal.id);
+    const u = res.success ? res.data : userLocal;
 
-    const paramsParaDetalle = esCreacion
-      ? { barberiaId, barberoCreado: datosExtra }
-      : {
-          barberiaId,
-          barberoActualizado: {
-            ...barbero,
-            nombre,
-            correo,
-            telefono,
-            activo: estatus,
-          },
-        };
+    setUsuarioId(u.id);
+    setNombreCompleto(`${u.nombre || ''} ${u.apellido || ''}`.trim());
+    setCorreo(u.email || u.correo || '');
+    setTelefono(u.telefono || '');
+    setFoto(u.fotoPerfil || null);
+    setCargando(false);
+  }, []);
 
-    // Trunca el stack hasta la instancia existente de DetalleBarberiaScreen,
-    // eliminando EditarBarberoScreen (y cualquier ruta después de Detalle)
-    // por completo. navigation.navigate({ key, merge }) NO hace esto: solo
-    // cambia el índice activo pero deja las rutas viejas en el array, por
-    // eso la flecha de regresar volvía a caer en el formulario.
-    const rutas = navigation.getState().routes;
-    const indiceDetalle = [...rutas].map((r) => r.name).lastIndexOf('DetalleBarberiaScreen');
+  useFocusEffect(
+    useCallback(() => {
+      cargarPerfil();
+    }, [cargarPerfil])
+  );
 
-    if (indiceDetalle !== -1) {
-      const nuevasRutas = rutas.slice(0, indiceDetalle + 1);
-      nuevasRutas[indiceDetalle] = {
-        ...nuevasRutas[indiceDetalle],
-        params: { ...nuevasRutas[indiceDetalle].params, ...paramsParaDetalle },
-      };
-
-      navigation.dispatch(
-        CommonActions.reset({
-          ...navigation.getState(),
-          routes: nuevasRutas,
-          index: nuevasRutas.length - 1,
-        })
-      );
-    } else {
-      // Fallback: si por alguna razón no se encuentra en el stack, navega normal.
-      navigation.navigate('DetalleBarberiaScreen', paramsParaDetalle);
+  const convertirImagenABase64 = async (uri) => {
+    if (!uri) return null;
+    if (uri.startsWith('data:') || uri.startsWith('http')) return uri;
+    try {
+      const response = await fetch(uri);
+      const blob = await response.blob();
+      return await new Promise((resolve, reject) => {
+        const reader = new FileReader();
+        reader.onloadend = () => resolve(reader.result);
+        reader.onerror = reject;
+        reader.readAsDataURL(blob);
+      });
+    } catch (e) {
+      console.log('Error convirtiendo imagen a base64:', e);
+      return null;
     }
   };
 
-  
   const handleCambiarFoto = async () => {
-  const permiso = await ImagePicker.requestMediaLibraryPermissionsAsync();
-  if (!permiso.granted) {
-    Alert.alert('Permiso requerido', 'Necesitamos acceso a tu galería para elegir una imagen.');
-    return;
-  }
-
-  const resultadoPicker = await ImagePicker.launchImageLibraryAsync({
-    mediaTypes: ImagePicker.MediaTypeOptions.Images,
-    allowsEditing: true,
-    aspect: [1, 1],
-    quality: 0.5,
-    base64: true,   
-  });
-
-  if (resultadoPicker.canceled || !resultadoPicker.assets?.length) return;
-
-  const asset = resultadoPicker.assets[0];
-  const base64Img = asset.base64
-    ? `data:image/jpeg;base64,${asset.base64}`
-    : asset.uri;
-
-  setFoto(base64Img);
-};
+    const permiso = await ImagePicker.requestMediaLibraryPermissionsAsync();
+    if (!permiso.granted) {
+      setResultado({
+        visible: true, type: 'error', title: 'Permiso requerido',
+        message: 'Necesitamos acceso a tu galería para elegir una imagen.',
+      });
+      return;
+    }
+    const resultadoPicker = await ImagePicker.launchImageLibraryAsync({
+      mediaTypes: ImagePicker.MediaTypeOptions.Images,
+      allowsEditing: true,
+      aspect: [1, 1],
+      quality: 0.5,
+    });
+    if (resultadoPicker.canceled || !resultadoPicker.assets?.length) return;
+    setFoto(resultadoPicker.assets[0].uri);
+  };
 
   const validarFormularioBasico = () => {
-    if (!nombre.trim() || !correo.trim() || !telefono.trim()) {
+    if (!nombreCompleto.trim() || !correo.trim() || !telefono.trim()) {
       setResultado({
-        visible: true,
-        type: 'error',
-        title: 'Faltan datos',
+        visible: true, type: 'error', title: 'Faltan datos',
         message: 'Nombre, correo y teléfono son obligatorios.',
       });
       return false;
@@ -185,20 +157,23 @@ const EditarBarberoScreen = ({ navigation, route }) => {
   };
 
   const validarPassword = () => {
+    if (!passwordActual) {
+      setResultado({
+        visible: true, type: 'error', title: 'Falta tu contraseña actual',
+        message: 'Ingresa tu contraseña actual para confirmar el cambio.',
+      });
+      return false;
+    }
     if (strengthScore < 3) {
       setResultado({
-        visible: true,
-        type: 'error',
-        title: 'Contraseña muy débil',
-        message: 'La contraseña debe cumplir al menos 3 de los 4 requisitos.',
+        visible: true, type: 'error', title: 'Contraseña muy débil',
+        message: 'La nueva contraseña debe cumplir al menos 3 de los 4 requisitos.',
       });
       return false;
     }
     if (nuevaPassword !== confirmarPassword) {
       setResultado({
-        visible: true,
-        type: 'error',
-        title: 'Las contraseñas no coinciden',
+        visible: true, type: 'error', title: 'Las contraseñas no coinciden',
         message: 'Verifica que la nueva contraseña y su confirmación sean iguales.',
       });
       return false;
@@ -206,131 +181,74 @@ const EditarBarberoScreen = ({ navigation, route }) => {
     return true;
   };
 
-  const handleCrear = async () => {
-    if (!validarFormularioBasico()) return;
-    if (!validarPassword()) return;
-    if (!barberiaId) {
-      setResultado({
-        visible: true,
-        type: 'error',
-        title: 'Falta la barbería',
-        message: 'No se especificó a qué barbería pertenece este barbero.',
-      });
-      return;
-    }
-
-    setLoading(true);
-
-
-    const partesNombre = nombre.trim().split(' ');
-    const nombreSeparado = partesNombre[0];
-    const apellidoSeparado = partesNombre.slice(1).join(' ') || '';
-
-    const payload = {
-      nombre: nombreSeparado,
-      apellido: apellidoSeparado,
-      correo,
-      password: nuevaPassword,
-      telefono,
-      idBarberia: barberiaId,
-      estado: estatus ? 1 : 0,
-      fotoPerfil: foto,
-    };
-
-    const res = await barberoAPI.crear(payload);
-
-    setLoading(false);
-
-    if (!res.success) {
-      setResultado({
-        visible: true,
-        type: 'error',
-        title: 'No se pudo crear',
-        message: res.error || 'Ocurrió un error al crear el barbero.',
-      });
-      return;
-    }
-
-    const nuevoBarbero = {
-      id: res.data.id,
-      idUsuario: res.data.idUsuario,
-      nombre,
-      correo,
-      telefono,
-      activo: estatus,
-      foto: res.data.fotoPerfil ?? null,
-    };
-
-    setResultado({
-      visible: true,
-      type: 'success',
-      title: '¡Listo!',
-      message: 'El barbero se creó correctamente.',
-      payloadExtra: nuevoBarbero,
-    });
-  };
-
   const handleActualizar = async () => {
     if (!validarFormularioBasico()) return;
-
-    if (cambiarPassword) {
-      if (!validarPassword()) return;
-    }
+    if (mostrarPassword && !validarPassword()) return;
 
     setLoading(true);
+    const fotoFinal = await convertirImagenABase64(foto);
 
-
-    const partesNombre = nombre.trim().split(' ');
-    const nombreSeparado = partesNombre[0];
-    const apellidoSeparado = partesNombre.slice(1).join(' ') || '';
+    const partes = nombreCompleto.trim().split(' ');
+    const nombreSeparado = partes[0];
+    const apellidoSeparado = partes.slice(1).join(' ') || '';
 
     const payload = {
       nombre: nombreSeparado,
       apellido: apellidoSeparado,
       correo,
       telefono,
-      estado: estatus ? 1 : 0,
-      fotoPerfil: foto,
-      ...(cambiarPassword && {
+      fotoPerfil: fotoFinal,
+      ...(mostrarPassword && {
         passwordActual,
         nuevaPassword,
       }),
     };
 
-    const res = await usuariosAPI.actualizar(barbero.idUsuario, payload);
-
+    const res = await usuariosAPI.actualizar(usuarioId, payload);
     setLoading(false);
 
     if (!res.success) {
       setResultado({
-        visible: true,
-        type: 'error',
-        title: 'No se pudo actualizar',
-        message: res.error || 'Ocurrió un error al actualizar el barbero.',
+        visible: true, type: 'error', title: 'No se pudo actualizar',
+        message: res.error || 'Ocurrió un error al actualizar tu perfil.',
       });
       return;
     }
 
+    // Refleja los cambios en el usuario guardado localmente
+    const userActual = await tokenManager.getUser();
+    const userActualizado = {
+      ...userActual,
+      nombre: nombreSeparado,
+      apellido: apellidoSeparado,
+      name: `${nombreSeparado} ${apellidoSeparado}`.trim(),
+      email: correo,
+      correo,
+      telefono,
+      fotoPerfil: fotoFinal,
+    };
+    await tokenManager.saveToken(await tokenManager.getToken(), userActualizado);
+
+    setMostrarPassword(false);
+    setPasswordActual('');
+    setNuevaPassword('');
+    setConfirmarPassword('');
+
     setResultado({
-      visible: true,
-      type: 'success',
-      title: '¡Listo!',
-      message: 'El barbero se actualizó correctamente.',
+      visible: true, type: 'success', title: '¡Listo!',
+      message: 'Tu perfil se actualizó correctamente.',
     });
   };
 
-  const handleSubmit = () => (esCreacion ? handleCrear() : handleActualizar());
-
   return (
-    <SafeAreaView style={styles.container} edges={["top", "bottom", "left", "right"]}>
-
+    <SafeAreaView style={styles.container} edges={['top', 'bottom', 'left', 'right']}>
       {/* ── Header ── */}
       <View style={styles.header}>
         <TouchableOpacity style={styles.backBtn} onPress={() => navigation.goBack()}>
           <Ionicons name="arrow-back" size={22} color="#FFFFFF" />
         </TouchableOpacity>
         <View style={styles.headerPill}>
-          <Text style={styles.headerTitle}>{esCreacion ? 'Nuevo' : 'Editar'}</Text>
+          <Text style={styles.headerTitle}>Mi Perfil</Text>
         </View>
       </View>
 
@@ -366,8 +284,8 @@ const EditarBarberoScreen = ({ navigation, route }) => {
                     style={styles.input}
                     placeholder="Nombre completo"
                     placeholderTextColor={isDark ? 'rgba(255,255,255,0.4)' : '#999'}
-                    value={nombre}
-                    onChangeText={setNombre}
+                    value={nombreCompleto}
+                    onChangeText={setNombreCompleto}
                   />
                 </View>
               </View>
@@ -401,63 +319,37 @@ const EditarBarberoScreen = ({ navigation, route }) => {
                 </View>
               </View>
 
-              <View style={styles.column}>
-                <Text style={styles.label}>Estatus:</Text>
-                <View style={styles.statusRow}>
-                  <Text style={styles.statusLabel}>
-                    {estatus ? 'Activo' : 'Inactivo'}
-                  </Text>
-                  <Switch
-                    value={estatus}
-                    onValueChange={setEstatus}
-                    trackColor={{ false: '#3A3A3A', true: '#22C55E' }}
-                    thumbColor="#FFFFFF"
-                  />
-                </View>
-              </View>
-
-              {/* En edición se puede elegir si cambiar password; en creación siempre se pide */}
-              {!esCreacion && (
+              {/* ── Botón "Restablecer contraseña" ── */}
+              {!mostrarPassword && (
                 <View style={styles.column}>
-                  <Text style={styles.label}>Cambiar contraseña?</Text>
-                  <View style={styles.statusRow}>
-                    <Text style={styles.statusLabel}>
-                      {cambiarPassword ? 'Sí' : 'No'}
-                    </Text>
-                    <Switch
-                      value={cambiarPassword}
-                      onValueChange={setCambiarPassword}
-                      trackColor={{ false: '#3A3A3A', true: '#22C55E' }}
-                      thumbColor="#FFFFFF"
-                    />
-                  </View>
+                  <Text style={styles.label}> </Text>
+                  <TouchableOpacity style={styles.resetBtn} onPress={() => setMostrarPassword(true)}>
+                    <Text style={styles.resetBtnText}>Cambiar contraseña</Text>
+                  </TouchableOpacity>
                 </View>
               )}
 
-              {/* Contraseña actual solo aplica al editar */}
-              {!esCreacion && cambiarPassword && (
-                <View style={styles.column}>
-                  <Text style={styles.label}>Contraseña Actual</Text>
-                  <View style={styles.inputRow}>
-                    <TextInput
-                      style={styles.input}
-                      placeholder="Value"
-                      placeholderTextColor={isDark ? 'rgba(255,255,255,0.4)' : '#999'}
-                      secureTextEntry={!showActual}
-                      value={passwordActual}
-                      onChangeText={setPasswordActual}
-                    />
-                    <TouchableOpacity onPress={() => setShowActual(!showActual)} style={styles.eyeBtn}>
-                      <Ionicons name={showActual ? 'eye-outline' : 'eye-off-outline'} size={18} color={isDark ? 'rgba(255,255,255,0.6)' : '#555'} />
-                    </TouchableOpacity>
-                  </View>
-                </View>
-              )}
-
-              {(esCreacion || cambiarPassword) && (
+              {mostrarPassword && (
                 <>
                   <View style={styles.column}>
-                    <Text style={styles.label}>{esCreacion ? 'Nueva Contraseña' : 'Nueva Contraseña'}</Text>
+                    <Text style={styles.label}>Contraseña Actual</Text>
+                    <View style={styles.inputRow}>
+                      <TextInput
+                        style={styles.input}
+                        placeholder="Value"
+                        placeholderTextColor={isDark ? 'rgba(255,255,255,0.4)' : '#999'}
+                        secureTextEntry={!showActual}
+                        value={passwordActual}
+                        onChangeText={setPasswordActual}
+                      />
+                      <TouchableOpacity onPress={() => setShowActual(!showActual)} style={styles.eyeBtn}>
+                        <Ionicons name={showActual ? 'eye-outline' : 'eye-off-outline'} size={18} color={isDark ? 'rgba(255,255,255,0.6)' : '#555'} />
+                      </TouchableOpacity>
+                    </View>
+                  </View>
+
+                  <View style={styles.column}>
+                    <Text style={styles.label}>Nueva Contraseña</Text>
                     <View style={styles.inputRow}>
                       <TextInput
                         style={styles.input}
@@ -527,6 +419,30 @@ const EditarBarberoScreen = ({ navigation, route }) => {
                       </View>
                     )}
                   </View>
+
+                  <View style={styles.column}>
+                    <Text style={styles.label}> </Text>
+                   <TouchableOpacity
+  style={[
+    styles.resetBtn,
+    {
+      backgroundColor: 'transparent',
+      borderWidth: 1,
+      borderColor: isDark ? 'rgba(255,255,255,0.3)' : 'rgba(0,0,0,0.25)',
+    },
+  ]}
+  onPress={() => {
+    setMostrarPassword(false);
+    setPasswordActual('');
+    setNuevaPassword('');
+    setConfirmarPassword('');
+  }}
+>
+  <Text style={[styles.resetBtnText, { color: isDark ? '#FFFFFF' : '#1A1A1A' }]}>
+    Cancelar cambio
+  </Text>
+</TouchableOpacity>
+                  </View>
                 </>
               )}
 
@@ -534,13 +450,11 @@ const EditarBarberoScreen = ({ navigation, route }) => {
 
             <TouchableOpacity
               style={[styles.btn, loading && { opacity: 0.6 }]}
-              onPress={handleSubmit}
+              onPress={handleActualizar}
               disabled={loading}
             >
               <Text style={styles.btnText}>
-                {loading
-                  ? (esCreacion ? 'Creando...' : 'Actualizando...')
-                  : (esCreacion ? 'Crear' : 'Actualizar')}
+                {loading ? 'Actualizando...' : 'Guardar cambios'}
               </Text>
             </TouchableOpacity>
           </View>
@@ -548,17 +462,20 @@ const EditarBarberoScreen = ({ navigation, route }) => {
         </View>
       </ScrollView>
 
-      <LoadingOverlay visible={loading} message={esCreacion ? 'Creando barbero...' : 'Actualizando barbero...'} />
+      <LoadingOverlay visible={cargando} message="Cargando perfil..." />
+      <LoadingOverlay visible={loading} message="Actualizando perfil..." />
 
-      <ResultModal
-        visible={resultado.visible}
-        type={resultado.type}
-        title={resultado.title}
-        message={resultado.message}
-        onClose={cerrarResultado}
-      />
+      {resultado.visible && (
+        <ResultModal
+          visible
+          type={resultado.type}
+          title={resultado.title}
+          message={resultado.message}
+          onClose={cerrarResultado}
+        />
+      )}
     </SafeAreaView>
   );
 };
 
-export default EditarBarberoScreen;
+export default PerfilScreen;

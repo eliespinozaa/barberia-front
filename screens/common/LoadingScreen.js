@@ -92,7 +92,7 @@ const LoadingScreen = ({ navigation, route }) => {
   };
 
   return (
-    <SafeAreaView style={styles.container}>
+    <SafeAreaView style={styles.container} edges={["top", "bottom", "left", "right"]}>
       <Animated.View
         style={[
           styles.content,

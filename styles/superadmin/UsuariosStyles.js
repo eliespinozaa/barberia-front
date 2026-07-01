@@ -3,20 +3,30 @@ import { StyleSheet, Platform } from 'react-native';
 const createStyles = (width, theme) => {
   const isSmall = width < 768;
   const isWeb   = Platform.OS === 'web';
+  const isDark  = theme.mode === 'dark';  
 
   const CONTENT_MAX_W = isSmall ? '100%' : 980;
-  const NAVBAR        = '#0B1014';
-  const TABLE_BG      = '#1B212F';
-  const FILTER_BG     = '#FFFFFF';
-  const FILTER_TEXT   = '#15181F';
-  const ESTADO_BG     = '#A6E3A1';
-  const ESTADO_TEXT   = '#1F6F35';
-  const ESTADO_BG_OFF = 'rgba(239,68,68,0.18)';
+  const NAVBAR        = '#0B1014'; 
+
+  const TABLE_BG       = isDark ? '#1B212F' : '#FFFFFF';
+  const FILTER_BG       = isDark ? '#FFFFFF' : '#F1F2F5';
+  const FILTER_TEXT     = '#15181F';
+  const ESTADO_BG       = '#A6E3A1';
+  const ESTADO_TEXT     = '#1F6F35';
+  const ESTADO_BG_OFF   = 'rgba(239,68,68,0.18)';
   const ESTADO_TEXT_OFF = '#EF4444';
-  const TEXT_PRIMARY  = '#FFFFFF';
-  const TEXT_SECONDARY = 'rgba(255,255,255,0.85)';
-  const TEXT_MUTED    = 'rgba(255,255,255,0.5)';
-  const PAGE_BTN_BG   = 'rgba(255,255,255,0.10)';
+  const TEXT_PRIMARY    = isDark ? '#FFFFFF' : '#1A1A1A';
+  const TEXT_SECONDARY  = isDark ? 'rgba(255,255,255,0.85)' : 'rgba(0,0,0,0.7)';
+  const TEXT_MUTED      = isDark ? 'rgba(255,255,255,0.5)' : 'rgba(0,0,0,0.45)';
+  const PAGE_BTN_BG     = isDark ? 'rgba(255,255,255,0.10)' : 'rgba(0,0,0,0.06)';
+  const ROW_BORDER      = isDark ? 'rgba(255,255,255,0.06)' : 'rgba(0,0,0,0.08)';
+  const CARD_FOOTER_BORDER = isDark ? 'rgba(255,255,255,0.08)' : 'rgba(0,0,0,0.08)';
+  const DROP_ITEM_ACTIVE   = isDark ? 'rgba(255,255,255,0.1)' : 'rgba(0,0,0,0.06)';
+  const MODAL_OVERLAY      = isDark ? 'rgba(0,0,0,0.6)' : 'rgba(0,0,0,0.35)';
+  const MODAL_CANCEL_BORDER = isDark ? 'rgba(255,255,255,0.3)' : 'rgba(0,0,0,0.2)';
+  const MODAL_BTN_BG       = isDark ? '#FFFFFF' : '#1A1A1A';
+  const MODAL_BTN_TEXT     = isDark ? '#1A1A1A' : '#FFFFFF';
+  const ADD_BTN_BG         = isDark ? 'rgba(255,255,255,0.12)' : 'rgba(0,0,0,0.08)';
 
   // Anchos de columna (solo web)
   const COL_NOMBRE   = 160;
@@ -80,7 +90,7 @@ const createStyles = (width, theme) => {
       width:           40,
       height:          40,
       borderRadius:    20,
-      backgroundColor: 'rgba(255,255,255,0.12)',
+      backgroundColor: ADD_BTN_BG,
       justifyContent:  'center',
       alignItems:      'center',
       ...(isWeb
@@ -114,7 +124,7 @@ const createStyles = (width, theme) => {
       flexDirection:     'row',
       alignItems:        'center',
       backgroundColor:   TABLE_BG,
-      borderRadius:      20,
+      borderRadius:      50,
       paddingHorizontal: 28,
       paddingVertical:   18,
       marginBottom:      16,
@@ -173,7 +183,7 @@ const createStyles = (width, theme) => {
       alignItems:     'center',
       paddingVertical: 14,
       borderTopWidth: 1,
-      borderTopColor: 'rgba(255,255,255,0.06)',
+      borderTopColor: ROW_BORDER,
     },
     tdCellName: {
       color:      TEXT_PRIMARY,
@@ -292,7 +302,7 @@ const createStyles = (width, theme) => {
       gap:            18,
       paddingTop:     10,
       borderTopWidth: 1,
-      borderTopColor: 'rgba(255,255,255,0.08)',
+      borderTopColor: CARD_FOOTER_BORDER,
     },
 
     /* ── Estado pill (compartido web/móvil) ── */
@@ -401,7 +411,7 @@ const createStyles = (width, theme) => {
       borderRadius:      10,
     },
     dropItemActive: {
-      backgroundColor: 'rgba(255,255,255,0.1)',
+      backgroundColor: DROP_ITEM_ACTIVE,
     },
     dropItemText: {
       color:      TEXT_PRIMARY,
@@ -415,7 +425,7 @@ const createStyles = (width, theme) => {
     /* ── Modal ── */
     modalOverlay: {
       flex:              1,
-      backgroundColor:   'rgba(0,0,0,0.6)',
+      backgroundColor:   MODAL_OVERLAY,
       justifyContent:    'center',
       alignItems:        'center',
       paddingHorizontal: 24,
@@ -438,7 +448,7 @@ const createStyles = (width, theme) => {
       position:       'relative',
     },
     modalTitle: {
-      color:      '#FFFFFF',
+      color:      TEXT_PRIMARY,
       fontSize:   15,
       fontWeight: '700',
     },
@@ -449,7 +459,7 @@ const createStyles = (width, theme) => {
       padding:  4,
     },
     modalMessage: {
-      color:        '#FFFFFF',
+      color:       TEXT_PRIMARY,
       fontSize:     14,
       fontWeight:   '500',
       textAlign:    'center',
@@ -464,28 +474,103 @@ const createStyles = (width, theme) => {
       flex:            1,
       backgroundColor: 'transparent',
       borderWidth:     1,
-      borderColor:     'rgba(255,255,255,0.3)',
+      borderColor:     MODAL_CANCEL_BORDER,
       borderRadius:    20,
       paddingVertical: 11,
       alignItems:      'center',
     },
     modalBtnCancelText: {
-      color:      '#FFFFFF',
+      color:     TEXT_PRIMARY,
       fontSize:   13,
       fontWeight: '600',
     },
     modalBtnConfirm: {
       flex:            1,
-      backgroundColor: '#FFFFFF',
+      backgroundColor: MODAL_BTN_BG,
       borderRadius:    20,
       paddingVertical: 11,
       alignItems:      'center',
     },
     modalBtnConfirmText: {
-      color:      '#1A1A1A',
+      color:      MODAL_BTN_TEXT,
       fontSize:   13,
       fontWeight: '700',
     },
+    /* ── Modal: detalle de usuario (ojito) ── */
+    detalleOverlay: {
+      flex:              1,
+      backgroundColor:   MODAL_OVERLAY,
+      justifyContent:    'center',
+      alignItems:        'center',
+      paddingHorizontal: 24,
+    },
+    detalleCard: {
+      backgroundColor:   TABLE_BG,
+      borderRadius:      24,
+      paddingTop:        28,
+      paddingBottom:     28,
+      paddingHorizontal: 24,
+      width:             '100%',
+      maxWidth:          320,
+      alignItems:        'center',
+      ...(isWeb && { boxShadow: '0px 12px 32px rgba(0,0,0,0.5)' }),
+    },
+    detalleCloseBtn: {
+      position: 'absolute',
+      right:    16,
+      top:      16,
+      padding:  4,
+    },
+    detalleAvatar: {
+      width:           84,
+      height:          84,
+      borderRadius:    42,
+      backgroundColor: '#D9D9D9',
+      justifyContent:  'center',
+      alignItems:      'center',
+      overflow:        'hidden',
+      marginBottom:    16,
+    },
+    detalleAvatarImage: {
+      width:  84,
+      height: 84,
+    },
+    detalleNombre: {
+      color:        TEXT_PRIMARY,
+      fontSize:     18,
+      fontWeight:   '800',
+      marginBottom: 18,
+      textAlign:    'center',
+    },
+    detalleLine: {
+      flexDirection: 'row',
+      alignItems:    'center',
+      flexWrap:      'wrap',
+      justifyContent: 'center',
+      marginBottom:  12,
+      gap:           4,
+    },
+    detalleLabel: {
+      color:      TEXT_PRIMARY,
+      fontSize:   14,
+      fontWeight: '800',
+    },
+    detalleValue: {
+      color:      TEXT_SECONDARY,
+      fontSize:   14,
+      fontWeight: '500',
+    },
+    detalleEstadoDot: {
+      width:        9,
+      height:       9,
+      borderRadius: 5,
+      backgroundColor: ESTADO_BG,
+      marginLeft:   2,
+    },
+    detalleEstadoDotOff: {
+      backgroundColor: ESTADO_TEXT_OFF,
+    },
+    
   });
 };
 
