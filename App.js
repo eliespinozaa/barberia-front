@@ -35,8 +35,12 @@ import AdminPromocionesScreen from './screens/owner/AdminPromocionesScreen';
 import AdminEditarPromocionScreen from './screens/owner/AdminEditarPromocionScreen';
 import AdminHorariosScreen from './screens/owner/AdminHorariosScreen';
 import AdminEditarHorarioScreen from './screens/owner/AdminEditarHorarioScreen';
+import AdminMembresiaScreen from './screens/owner/AdminMembresiaScreen';
+import AdminReseñasScreen from './screens/owner/AdminReseñasScreen';
+import AdminCitasScreen from './screens/owner/AdminCitasScreen';
 
 
+import ClienteAgendarCitaScreen from './screens/client/ClienteAgendarCitaScreen';
 
 
 
@@ -166,8 +170,12 @@ export default function App() {
 <Stack.Screen name="AdminEditarPromocionScreen" component={AdminEditarPromocionScreen} options={{ gestureEnabled: false }} />
 <Stack.Screen name="AdminEditarHorarioScreen" component={AdminEditarHorarioScreen} options={{ gestureEnabled: false }} />
 <Stack.Screen name="AdminHorariosScreen" component={AdminHorariosScreen} options={{ gestureEnabled: false }} />
+<Stack.Screen name="AdminMembresiaScreen" component={AdminMembresiaScreen} options={{ gestureEnabled: false }} />
+<Stack.Screen name="AdminReseñasScreen" component={AdminReseñasScreen} options={{ gestureEnabled: false }} />
+<Stack.Screen name="AdminCitasScreen" component={AdminCitasScreen} options={{ gestureEnabled: false }} />
 
 
+<Stack.Screen name="ClienteAgendarCitaScreen" component={ClienteAgendarCitaScreen} options={{ gestureEnabled: false }} />
 
 
 

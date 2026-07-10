@@ -251,7 +251,7 @@ const AdminBarberosScreen = ({ navigation, route }) => {
             <View style={styles.modalHeader}>
               <Text style={styles.modalTitle}>Eliminar barbero</Text>
               <TouchableOpacity style={styles.modalCloseBtn} onPress={cerrarModalEliminar}>
-                <Ionicons name="close" size={18} color="#FFFFFF" />
+                <Ionicons name="close" size={18} color={isDark ? '#FFFFFF' : '#1A1A1A'} />
               </TouchableOpacity>
             </View>
 

@@ -4,11 +4,11 @@
     "slug": "barberia-app",
     "version": "1.0.0",
     "orientation": "portrait",
-    "icon": "./assets/icon.png",
+    "icon": "./assets/Logo.png",
     "userInterfaceStyle": "light",
     "newArchEnabled": true,
     "splash": {
-      "image": "./assets/icon.png",
+      "image": "./assets/Logo.png",
       "resizeMode": "contain",
       "backgroundColor": "#ffffff"
     },
@@ -24,9 +24,9 @@
     "android": {
       "adaptiveIcon": {
         "backgroundColor": "#E6F4FE",
-        "foregroundImage": "./assets/android-icon-foreground.png",
-        "backgroundImage": "./assets/android-icon-background.png",
-        "monochromeImage": "./assets/android-icon-monochrome.png"
+        "foregroundImage": "./assets/Logo.png",
+        "backgroundImage": "./assets/Logo.png",
+        "monochromeImage": "./assets/Logo.png"
       },
       "edgeToEdgeEnabled": true,
       "package": "com.nxs.barberiaapp",
@@ -46,7 +46,7 @@
       [
         "expo-notifications",
         {
-          "icon": "./assets/icon.png",
+          "icon": "./assets/Logo.png",
           "color": "#ffffff",
           "sounds": []
         }

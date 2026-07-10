@@ -283,7 +283,7 @@ const AdminServiciosScreen = ({ navigation, route }) => {
             <View style={styles.modalHeader}>
               <Text style={styles.modalTitle}>{servicioDetalle?.nombre}</Text>
               <TouchableOpacity style={styles.modalCloseBtn} onPress={() => setServicioDetalle(null)}>
-                <Ionicons name="close" size={18} color="#FFFFFF" />
+                <Ionicons name="close" size={18} color={isDark ? '#FFFFFF' : '#1A1A1A'} />
               </TouchableOpacity>
             </View>
 
@@ -306,7 +306,7 @@ const AdminServiciosScreen = ({ navigation, route }) => {
             <View style={styles.modalHeader}>
               <Text style={styles.modalTitle}>Eliminar servicio</Text>
               <TouchableOpacity style={styles.modalCloseBtn} onPress={cerrarModalEliminar}>
-                <Ionicons name="close" size={18} color="#FFFFFF" />
+                <Ionicons name="close" size={18} color={isDark ? '#FFFFFF' : '#1A1A1A'} />
               </TouchableOpacity>
             </View>
 

@@ -226,7 +226,7 @@ const createStyles = (width, theme) => {
       textAlign:  'center',
     },
 
-    /* ── Modal: confirmar eliminar ── */
+/* ── Modal: confirmar eliminar ── */
     modalOverlay: {
       flex:              1,
       backgroundColor:   'rgba(0,0,0,0.6)',
@@ -235,14 +235,14 @@ const createStyles = (width, theme) => {
       paddingHorizontal: 24,
     },
     modalCard: {
-      backgroundColor:   '#1A2230',
+      backgroundColor:   isDark ? '#1A2230' : '#FFFFFF',
       borderRadius:      20,
       paddingTop:        20,
       paddingBottom:     20,
       paddingHorizontal: 22,
       width:             '100%',
       maxWidth:          340,
-      ...(isWeb && { boxShadow: '0px 12px 32px rgba(0,0,0,0.5)' }),
+      ...(isWeb && { boxShadow: isDark ? '0px 12px 32px rgba(0,0,0,0.5)' : '0px 12px 32px rgba(0,0,0,0.2)' }),
     },
     modalHeader: {
       flexDirection:  'row',
@@ -252,7 +252,7 @@ const createStyles = (width, theme) => {
       position:       'relative',
     },
     modalTitle: {
-      color:      '#FFFFFF',
+      color:      isDark ? '#FFFFFF' : '#1A1A1A',
       fontSize:   15,
       fontWeight: '700',
     },
@@ -263,7 +263,7 @@ const createStyles = (width, theme) => {
       padding:  4,
     },
     modalMessage: {
-      color:        '#FFFFFF',
+      color:        isDark ? '#FFFFFF' : 'rgba(0,0,0,0.75)',
       fontSize:     14,
       fontWeight:   '500',
       textAlign:    'center',
@@ -278,28 +278,29 @@ const createStyles = (width, theme) => {
       flex:            1,
       backgroundColor: 'transparent',
       borderWidth:     1,
-      borderColor:     'rgba(255,255,255,0.3)',
+      borderColor:     isDark ? 'rgba(255,255,255,0.3)' : 'rgba(0,0,0,0.2)',
       borderRadius:    20,
       paddingVertical: 11,
       alignItems:      'center',
     },
     modalBtnCancelText: {
-      color:      '#FFFFFF',
+      color:      isDark ? '#FFFFFF' : '#1A1A1A',
       fontSize:   13,
       fontWeight: '600',
     },
     modalBtnConfirm: {
       flex:            1,
-      backgroundColor: '#FFFFFF',
+      backgroundColor: isDark ? '#FFFFFF' : '#1A1A1A',
       borderRadius:    20,
       paddingVertical: 11,
       alignItems:      'center',
     },
     modalBtnConfirmText: {
-      color:      '#1A1A1A',
+      color:      isDark ? '#1A1A1A' : '#FFFFFF',
       fontSize:   13,
       fontWeight: '700',
     },
+
   });
 };
 

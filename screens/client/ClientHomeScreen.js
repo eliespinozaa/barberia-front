@@ -1,73 +1,195 @@
-import React, { useState, useRef } from 'react';
+import React, { useState, useCallback } from "react";
 import {
   View,
   Text,
   TouchableOpacity,
   ScrollView,
+  Image,
+  Linking,
   useWindowDimensions,
   Platform,
-} from 'react-native';
-import { SafeAreaView } from 'react-native-safe-area-context';
-import { Ionicons } from '@expo/vector-icons';
-import createStyles from '../../styles/client/ClientHomeStyles';
-import { tokenManager } from '../../config/api';
-import { useTheme } from '../../context/ThemeContext';
+} from "react-native";
+import { SafeAreaView } from "react-native-safe-area-context";
+import { Ionicons } from "@expo/vector-icons";
+import { useFocusEffect } from "@react-navigation/native";
+import createStyles from "../../styles/client/ClientHomeStyles";
+import {
+  tokenManager,
+  clienteAPI,
+  promocionAPI,
+  servicioAPI,
+  citaAPI,
+} from "../../config/api";
+import { useTheme } from "../../context/ThemeContext";
+import LoadingOverlay from "../../components/LoadingOverlay";
 
-const PROMOCIONES = [
-  {
-    id: 1,
-    titulo: 'Fade + Barba',
-    desc: 'Obtén corte fade y perfilado de barba con descuento.',
-    badge: '20% de descuento',
-    validez: 'Válido hasta...',
-  },
-  {
-    id: 2,
-    titulo: '2×1 en corte infantil',
-    desc: '',
-    badge: '',
-    validez: 'Válido hasta...',
-  },
-  {
-    id: 3,
-    titulo: 'Primer corte con descuento',
-    desc: '15% OFF para nuevos clientes.',
-    badge: '',
-    validez: 'Válido hasta...',
-  },
+const MESES = [
+  "Enero",
+  "Febrero",
+  "Marzo",
+  "Abril",
+  "Mayo",
+  "Junio",
+  "Julio",
+  "Agosto",
+  "Septiembre",
+  "Octubre",
+  "Noviembre",
+  "Diciembre",
 ];
+
+// ── Helper: desenreda números que vienen como {parsedValue} o como número plano ──
+const num = (valor) => {
+  if (valor == null) return 0;
+  if (typeof valor === "number") return valor;
+  if (typeof valor === "object" && "parsedValue" in valor)
+    return valor.parsedValue;
+  return Number(valor) || 0;
+};
+
+const formatearFechaCita = (fechaISO) => {
+  if (!fechaISO) return "";
+  const f = new Date(fechaISO + "T00:00:00");
+  return `${f.getDate()} de ${MESES[f.getMonth()]}`;
+};
 
 const ClientHomeScreen = ({ route, navigation }) => {
   const { width } = useWindowDimensions();
-  const barberia = route?.params?.barberia;
-  const user = route?.params?.user;
+  const { theme, toggleTheme } = useTheme();
+  const styles = createStyles(width, theme);
+
   const [dropdownVisible, setDropdownVisible] = useState(false);
-  const isWeb = Platform.OS === 'web';
-const { theme, toggleTheme } = useTheme(); // ← agrega esto
-  const styles = createStyles(width, theme);  // ← pasa el theme
+  const [user, setUser] = useState(route?.params?.user ?? null);
+  const [barberia, setBarberia] = useState(null);
+  const [promociones, setPromociones] = useState([]);
+  const [servicios, setServicios] = useState([]);
+  const [proximaCita, setProximaCita] = useState(null);
+  const [cargando, setCargando] = useState(true);
+  const [error, setError] = useState(null);
+
+  const cargarDatos = useCallback(async () => {
+    setCargando(true);
+    setError(null);
+
+    try {
+      const userActual = user ?? (await tokenManager.getUser());
+      if (!userActual?.id) {
+        setError("No se pudo identificar al usuario");
+        return;
+      }
+      setUser(userActual);
+
+      const resBarberia = await clienteAPI.obtenerBarberiaAsociada(
+        userActual.id,
+      );
+      if (!resBarberia.success) {
+        setError(resBarberia.error);
+        return;
+      }
+      setBarberia(resBarberia.data);
+
+      const idBarberia = resBarberia.data.id;
+
+      const [resPromos, resServicios, resCitas] = await Promise.all([
+        promocionAPI.listarPorBarberia(idBarberia),
+        servicioAPI.listarPorBarberia(idBarberia),
+        citaAPI.historial(userActual.id, idBarberia),
+      ]);
+
+      if (resPromos.success) setPromociones(resPromos.data);
+
+      if (resServicios.success) {
+        // Normalizamos precio (puede venir como {source, parsedValue})
+        const serviciosNormalizados = resServicios.data
+          .slice(0, 4)
+          .map((s) => ({
+            ...s,
+            precio: num(s.precio),
+          }));
+        setServicios(serviciosNormalizados);
+      }
+
+      if (resCitas.success) {
+        const hoy = new Date().toISOString().split("T")[0];
+        const futuras = resCitas.data
+          .filter(
+            (c) =>
+              c.fecha >= hoy &&
+              c.estado !== "CANCELADA" &&
+              c.estado !== "COMPLETADA",
+          )
+          .sort((a, b) => a.fecha.localeCompare(b.fecha));
+        setProximaCita(futuras[0] ?? null);
+      }
+    } catch (e) {
+      setError("Error inesperado al cargar los datos");
+    } finally {
+      setCargando(false);
+    }
+  }, [user]);
+
+  useFocusEffect(
+    useCallback(() => {
+      cargarDatos();
+      // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, []),
+  );
 
   const handleLogout = async () => {
-  setDropdownVisible(false);
-  await tokenManager.clearAll();
-  navigation.replace('Home'); 
-};
+    setDropdownVisible(false);
+    await tokenManager.clearAll();
+    navigation.replace("Home");
+  };
+
+  const abrirEnMaps = () => {
+    if (!barberia?.direccion) return;
+    const query = encodeURIComponent(
+      `${barberia.nombre} ${barberia.direccion}`,
+    );
+    const url = Platform.select({
+      ios: `maps:0,0?q=${query}`,
+      android: `geo:0,0?q=${query}`,
+      default: `https://www.google.com/maps/search/?api=1&query=${query}`,
+    });
+    Linking.openURL(url);
+  };
+
   return (
-    <SafeAreaView style={styles.container} edges={["top", "bottom", "left", "right"]}>
+    <SafeAreaView
+      style={styles.container}
+      edges={["top", "bottom", "left", "right"]}
+    >
+      <LoadingOverlay visible={cargando} message="Cargando tu barbería..." />
 
       {/* ── Navbar ── */}
       <View style={styles.navbar}>
         <View style={styles.navLeft}>
           <View style={styles.navLogoWrap}>
-            <Ionicons name="cut" size={18} color="#C9A84C" />
+            {barberia?.imagen ? (
+              <Image
+                source={{ uri: barberia.imagen }}
+                style={styles.navLogoImg}
+              />
+            ) : (
+              <Ionicons name="cut" size={18} color="#C9A84C" />
+            )}
           </View>
-          <Text style={styles.navBarberia}>{barberia?.nombre || 'Mi Barbería'}</Text>
+          <Text style={styles.navBarberia}>
+            {barberia?.nombre || "Mi Barbería"}
+          </Text>
         </View>
 
         {width >= 768 && (
           <View style={styles.navLinks}>
-            <TouchableOpacity><Text style={styles.navLinkActive}>Inicio</Text></TouchableOpacity>
-            <TouchableOpacity><Text style={styles.navLink}>Agendar cita</Text></TouchableOpacity>
-            <TouchableOpacity><Text style={styles.navLink}>Mis citas</Text></TouchableOpacity>
+            <TouchableOpacity>
+              <Text style={styles.navLinkActive}>Inicio</Text>
+            </TouchableOpacity>
+            <TouchableOpacity onPress={() => { setDropdownVisible(false); navigation.navigate('ClienteAgendarCitaScreen'); }}>
+              <Text style={styles.navLink}>Agendar cita</Text>
+            </TouchableOpacity>
+            <TouchableOpacity onPress={() => { setDropdownVisible(false); navigation.navigate('MisCitasScreen'); }}>
+              <Text style={styles.navLink}>Mis citas</Text>
+            </TouchableOpacity>
           </View>
         )}
 
@@ -79,83 +201,170 @@ const { theme, toggleTheme } = useTheme(); // ← agrega esto
             style={styles.navIcon}
             onPress={() => setDropdownVisible(!dropdownVisible)}
           >
-<Ionicons name="person-circle-outline" size={26} color="#FFFFFF" />
+            <Ionicons name="person-circle-outline" size={26} color="#FFFFFF" />
           </TouchableOpacity>
         </View>
       </View>
 
-      {/* ── Dropdown perfil ── */}
       {dropdownVisible && (
         <View style={styles.dropdown}>
-         <TouchableOpacity style={styles.dropdownItem} onPress={() => setDropdownVisible(false)}>
+          <TouchableOpacity
+  style={styles.dropdownItem}
+  onPress={() => { setDropdownVisible(false); navigation.navigate('PerfilScreen'); }}
+>
   <Ionicons name="person-outline" size={18} color={theme.colors.text} />
   <Text style={styles.dropdownText}>Mi Perfil</Text>
 </TouchableOpacity>
-
-<TouchableOpacity style={styles.dropdownItem} onPress={() => { toggleTheme(); setDropdownVisible(false); }}>
-  <Ionicons name="moon-outline" size={18} color={theme.colors.text} />
-  <Text style={styles.dropdownText}>Modo Oscuro</Text>
-</TouchableOpacity>
-
-<TouchableOpacity style={styles.dropdownItem} onPress={handleLogout}>
-  <Ionicons name="log-out-outline" size={18} color={theme.colors.text} />
-  <Text style={styles.dropdownText}>Cerrar Sesión</Text>
-</TouchableOpacity>
+          <TouchableOpacity
+            style={styles.dropdownItem}
+            onPress={() => {
+              toggleTheme();
+              setDropdownVisible(false);
+            }}
+          >
+            <Ionicons name="moon-outline" size={18} color={theme.colors.text} />
+            <Text style={styles.dropdownText}>Modo Oscuro</Text>
+          </TouchableOpacity>
+          <TouchableOpacity style={styles.dropdownItem} onPress={handleLogout}>
+            <Ionicons
+              name="log-out-outline"
+              size={18}
+              color={theme.colors.text}
+            />
+            <Text style={styles.dropdownText}>Cerrar Sesión</Text>
+          </TouchableOpacity>
         </View>
       )}
 
       <ScrollView showsVerticalScrollIndicator={false}>
+        {error && (
+          <Text
+            style={{ color: "#E85D5D", textAlign: "center", marginTop: 12 }}
+          >
+            {error}
+          </Text>
+        )}
 
         {/* ── Saludo ── */}
         <View style={styles.greeting}>
           <Text style={styles.greetingText}>
-            Hola {user?.nombreCompleto?.split(' ')[0] || 'Cliente'}, Bienvenido a {barberia?.nombre || 'tu barbería'}
+            Hola {user?.nombreCompleto?.split(" ")[0] || "Cliente"}, Bienvenido
+            a {barberia?.nombre || "tu barbería"}
           </Text>
         </View>
 
-        {/* ── Hero: video + mapa ── */}
+        {/* ── Próxima cita ── */}
+        {proximaCita && (
+          <View style={styles.proximaCitaCard}>
+            <View style={styles.proximaCitaHeader}>
+              <Ionicons name="calendar" size={20} color="#C9A84C" />
+              <Text style={styles.proximaCitaLabel}>Tu próxima cita</Text>
+            </View>
+            <Text style={styles.proximaCitaFecha}>
+              {formatearFechaCita(proximaCita.fecha)} ·{" "}
+              {proximaCita.horaInicio?.slice(0, 5)}
+            </Text>
+            <Text style={styles.proximaCitaEstado}>{proximaCita.estado}</Text>
+          </View>
+        )}
+
+        {/* ── Hero: video + tarjeta de ubicación ── */}
         <View style={styles.heroRow}>
           <View style={styles.heroVideo}>
-            {/* Placeholder video — reemplaza con tu componente de video */}
             <View style={styles.videoPlaceholder} />
           </View>
           <View style={styles.heroMap}>
-            {/* Placeholder mapa — reemplaza con MapView */}
-            <View style={styles.mapPlaceholder}>
-              <Ionicons name="location-outline" size={32} color="#888" />
-              <View style={styles.mapControls}>
-                <Text style={styles.mapControlBtn}>＋</Text>
-                <Text style={styles.mapControlBtn}>－</Text>
-                <Text style={styles.mapControlBtn}>⊕</Text>
+            <TouchableOpacity
+              style={styles.addressCard}
+              onPress={abrirEnMaps}
+              activeOpacity={0.8}
+            >
+              <Ionicons name="location" size={28} color="#C9A84C" />
+              <Text style={styles.addressText} numberOfLines={2}>
+                {barberia?.direccion || "Dirección no disponible"}
+              </Text>
+              <View style={styles.addressBtn}>
+                <Ionicons name="navigate-outline" size={14} color="#0B1014" />
+                <Text style={styles.addressBtnText}>Cómo llegar</Text>
               </View>
+            </TouchableOpacity>
+          </View>
+        </View>
+
+        {/* ── Servicios destacados ── */}
+        {servicios.length > 0 && (
+          <View style={styles.promoSection}>
+            <Text style={styles.promoTitle}>Servicios destacados</Text>
+            <View style={styles.promoGrid}>
+              {servicios.map((s) => (
+                <View key={s.id} style={styles.promoCard}>
+                  <View style={styles.promoCardHeader}>
+                    <Text style={styles.promoCardTitulo}>{s.nombre}</Text>
+                    <View style={styles.promoIconWrap}>
+                      {s.imagen ? (
+                        <Image
+                          source={{ uri: s.imagen }}
+                          style={styles.promoIconImg}
+                        />
+                      ) : (
+                        <Ionicons
+                          name="cut-outline"
+                          size={16}
+                          color="#C9A84C"
+                        />
+                      )}
+                    </View>
+                  </View>
+                  {!!s.descripcion && (
+                    <Text style={styles.promoCardDesc} numberOfLines={2}>
+                      {s.descripcion}
+                    </Text>
+                  )}
+                  <Text style={styles.promoCardBadge}>$ {s.precio}</Text>
+                </View>
+              ))}
             </View>
           </View>
-        </View>
+        )}
 
         {/* ── Promociones ── */}
-        <View style={styles.promoSection}>
-          <Text style={styles.promoTitle}>Promociones</Text>
-          <View style={styles.promoGrid}>
-            {PROMOCIONES.map((promo) => (
-              <View key={promo.id} style={styles.promoCard}>
-                <View style={styles.promoCardHeader}>
-                  <Text style={styles.promoCardTitulo}>{promo.titulo}</Text>
-                  <View style={styles.promoIconWrap}>
-                    <Ionicons name="flash" size={16} color="#C9A84C" />
+        {promociones.length > 0 && (
+          <View style={styles.promoSection}>
+            <Text style={styles.promoTitle}>Promociones</Text>
+            <View style={styles.promoGrid}>
+              {promociones.map((promo) => (
+                <View key={promo.id} style={styles.promoCard}>
+                  <View style={styles.promoCardHeader}>
+                    <Text style={styles.promoCardTitulo}>{promo.titulo}</Text>
+                    <View style={styles.promoIconWrap}>
+                      {promo.imagen ? (
+                        <Image
+                          source={{ uri: promo.imagen }}
+                          style={styles.promoIconImg}
+                        />
+                      ) : (
+                        <Ionicons name="flash" size={16} color="#C9A84C" />
+                      )}
+                    </View>
                   </View>
+                  {!!promo.descripcion && (
+                    <Text style={styles.promoCardDesc}>
+                      {promo.descripcion}
+                    </Text>
+                  )}
+                  {!!promo.descuento && (
+                    <Text style={styles.promoCardBadge}>
+                      {num(promo.descuento)}% de descuento
+                    </Text>
+                  )}
+                  <Text style={styles.promoCardValidez}>
+                    Válido hasta {formatearFechaCita(promo.fechaFin)}
+                  </Text>
                 </View>
-                {!!promo.desc && (
-                  <Text style={styles.promoCardDesc}>{promo.desc}</Text>
-                )}
-                {!!promo.badge && (
-                  <Text style={styles.promoCardBadge}>{promo.badge}</Text>
-                )}
-                <Text style={styles.promoCardValidez}>{promo.validez}</Text>
-              </View>
-            ))}
+              ))}
+            </View>
           </View>
-        </View>
-
+        )}
       </ScrollView>
 
       {/* ── Bottom nav (móvil) ── */}
@@ -163,9 +372,11 @@ const { theme, toggleTheme } = useTheme(); // ← agrega esto
         <View style={styles.bottomNav}>
           <TouchableOpacity style={styles.bottomNavItem}>
             <Ionicons name="home-outline" size={22} color="#C9A84C" />
-            <Text style={[styles.bottomNavText, { color: '#C9A84C' }]}>Inicio</Text>
+            <Text style={[styles.bottomNavText, { color: "#C9A84C" }]}>
+              Inicio
+            </Text>
           </TouchableOpacity>
-          <TouchableOpacity style={styles.bottomNavItem}>
+          <TouchableOpacity style={styles.bottomNavItem} onPress={() => navigation.navigate('ClienteAgendarCitaScreen')}>
             <Ionicons name="calendar-outline" size={22} color="#888" />
             <Text style={styles.bottomNavText}>Agendar</Text>
           </TouchableOpacity>
@@ -173,13 +384,12 @@ const { theme, toggleTheme } = useTheme(); // ← agrega esto
             <Ionicons name="time-outline" size={22} color="#888" />
             <Text style={styles.bottomNavText}>Mis citas</Text>
           </TouchableOpacity>
-          <TouchableOpacity style={styles.bottomNavItem}>
-            <Ionicons name="person-outline" size={22} color="#888" />
-            <Text style={styles.bottomNavText}>Perfil</Text>
-          </TouchableOpacity>
+         <TouchableOpacity style={styles.bottomNavItem} onPress={() => navigation.navigate('PerfilScreen')}>
+  <Ionicons name="person-outline" size={22} color="#888" />
+  <Text style={styles.bottomNavText}>Perfil</Text>
+</TouchableOpacity>
         </View>
       )}
-
     </SafeAreaView>
   );
 };

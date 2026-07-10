@@ -181,6 +181,30 @@ export const clienteAPI = {
       return { success: false, error: 'Error al guardar localmente' };
     }
   },
+
+
+  obtenerBarberiaAsociada: async (clienteId) => {
+    try {
+      const token = await tokenManager.getToken();
+      const response = await fetch(
+        `${API_CONFIG.URL}/cliente-barberia/barberia?clienteId=${clienteId}`,
+        {
+          method: 'GET',
+          headers: {
+            'Content-Type': 'application/json',
+            ...(token && { Authorization: `Bearer ${token}` }),
+          },
+        }
+      );
+      const data = await response.json();
+      if (data?.code === 200) {
+        return { success: true, data: data.data };
+      }
+      return { success: false, error: data?.description || 'No se encontró barbería asociada' };
+    } catch (error) {
+      return { success: false, error: 'Error de conexión' };
+    }
+  },
 };
 
 export const barberiaAPI = {
@@ -327,7 +351,7 @@ export const barberiaAPI = {
       }
     );
 
-    const data = await response.json();
+    const data = await parseResponse(response);
 
     if (data?.code === 200) {
       return { success: true, data: data.data };
@@ -498,7 +522,7 @@ eliminar: async (id) => {
         ...(token && { Authorization: `Bearer ${token}` }),
       },
     });
-    const data = await response.json();
+    const data = await parseResponse(response);
     if (data?.code === 200) {
       return { success: true, data: data.data };
     }
@@ -656,6 +680,17 @@ export const pagoAPI = {
 };
 
 
+const parseResponse = async (response) => {
+  if (response.status === 204) {
+    return { code: 200, data: null };
+  }
+  const contentType = response.headers.get('content-type');
+  if (contentType && contentType.includes('application/json')) {
+    return await response.json();
+  }
+  return null;
+};
+
 export const barberoAPI = {
 
   listarPorBarberia: async (idBarberia) => {
@@ -727,7 +762,6 @@ crear: async (payload) => {
   }
 },
 
-
 eliminar: async (id) => {
   try {
     const token = await tokenManager.getToken();
@@ -738,9 +772,10 @@ eliminar: async (id) => {
         ...(token && { Authorization: `Bearer ${token}` }),
       },
     });
-    const data = await response.json();
-    if (data?.code === 200) {
-      return { success: true, data: data.data };
+    const data = await parseResponse(response);
+
+    if (response.status === 204 || data?.code === 200) {
+      return { success: true, data: data?.data ?? null };
     }
     return { success: false, error: data?.description || 'No se pudo eliminar el barbero' };
   } catch (error) {
@@ -826,7 +861,7 @@ export const servicioAPI = {
           ...(token && { Authorization: `Bearer ${token}` }),
         },
       });
-      const data = await response.json();
+      const data = await parseResponse(response);
       if (data?.code === 200) {
         return { success: true, data: data.data };
       }
@@ -837,6 +872,7 @@ export const servicioAPI = {
   },
 
 };
+
 
 
 export const citaAPI = {
@@ -862,6 +898,107 @@ export const citaAPI = {
       return { success: false, error: 'Error de conexión' };
     }
   },
+
+  
+  listarPorFecha: async (idBarberia, fecha) => {
+    try {
+      const token = await tokenManager.getToken();
+      const response = await fetch(
+        `${API_CONFIG.URL}/citas/barberia/${idBarberia}/dia?fecha=${fecha}`,
+        {
+          method: 'GET',
+          headers: {
+            'Content-Type': 'application/json',
+            ...(token && { Authorization: `Bearer ${token}` }),
+          },
+        }
+      );
+      const data = await response.json();
+      if (data?.code === 200 && Array.isArray(data?.data)) {
+        return { success: true, data: data.data };
+      }
+      return { success: false, error: data?.description || 'No se pudieron obtener las citas' };
+    } catch (error) {
+      return { success: false, error: 'Error de conexión' };
+    }
+  },
+
+  confirmar: async (idCita) => {
+    try {
+      const token = await tokenManager.getToken();
+      const response = await fetch(`${API_CONFIG.URL}/citas/${idCita}/confirmar`, {
+        method: 'PATCH',
+        headers: {
+          'Content-Type': 'application/json',
+          ...(token && { Authorization: `Bearer ${token}` }),
+        },
+      });
+      const data = await response.json();
+      if (data?.code === 200) return { success: true, data: data.data };
+      return { success: false, error: data?.description || 'No se pudo confirmar la cita' };
+    } catch (error) {
+      return { success: false, error: 'Error de conexión' };
+    }
+  },
+
+  cancelar: async (idCita) => {
+    try {
+      const token = await tokenManager.getToken();
+      const response = await fetch(`${API_CONFIG.URL}/citas/${idCita}/cancelar`, {
+        method: 'PATCH',
+        headers: {
+          'Content-Type': 'application/json',
+          ...(token && { Authorization: `Bearer ${token}` }),
+        },
+      });
+      const data = await response.json();
+      if (data?.code === 200) return { success: true, data: data.data };
+      return { success: false, error: data?.description || 'No se pudo cancelar la cita' };
+    } catch (error) {
+      return { success: false, error: 'Error de conexión' };
+    }
+  },
+
+  finalizar: async (idCita) => {
+    try {
+      const token = await tokenManager.getToken();
+      const response = await fetch(`${API_CONFIG.URL}/citas/${idCita}/finalizar`, {
+        method: 'PATCH',
+        headers: {
+          'Content-Type': 'application/json',
+          ...(token && { Authorization: `Bearer ${token}` }),
+        },
+      });
+      const data = await response.json();
+      if (data?.code === 200) return { success: true, data: data.data };
+      return { success: false, error: data?.description || 'No se pudo finalizar la cita' };
+    } catch (error) {
+      return { success: false, error: 'Error de conexión' };
+    }
+  },
+
+
+
+  crear: async (payload) => {
+  try {
+    const token = await tokenManager.getToken();
+    const response = await fetch(`${API_CONFIG.URL}/citas`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        ...(token && { Authorization: `Bearer ${token}` }),
+      },
+      body: JSON.stringify(payload),
+    });
+    const data = await response.json();
+    if (data?.code === 200 || data?.code === 201) {
+      return { success: true, data: data.data };
+    }
+    return { success: false, error: data?.description || 'No se pudo agendar la cita' };
+  } catch (error) {
+    return { success: false, error: 'Error de conexión' };
+  }
+},
 };
 
 
@@ -915,7 +1052,7 @@ export const promocionAPI = {
         method: 'DELETE',
         headers: { 'Content-Type': 'application/json', ...(token && { Authorization: `Bearer ${token}` }) },
       });
-      const data = await response.json();
+      const data = await parseResponse(response);
       if (data?.code === 200) return { success: true };
       return { success: false, error: data?.description || 'No se pudo eliminar la promoción' };
     } catch { return { success: false, error: 'Error de conexión' }; }
@@ -965,6 +1102,78 @@ export const horarioAPI = {
       if (data?.code === 200) return { success: true, data: data.data };
       return { success: false, error: data?.description || 'No se pudo actualizar el horario' };
     } catch { return { success: false, error: 'Error de conexión' }; }
+  },
+
+};
+
+
+export const resenaAPI = {
+
+  listarPorBarberia: async (idBarberia) => {
+    try {
+      const token = await tokenManager.getToken();
+      const response = await fetch(`${API_CONFIG.URL}/resenas/barberia/${idBarberia}`, {
+        method: 'GET',
+        headers: {
+          'Content-Type': 'application/json',
+          ...(token && { Authorization: `Bearer ${token}` }),
+        },
+      });
+      const data = await response.json();
+      if (data?.code === 200 && Array.isArray(data?.data)) {
+        return { success: true, data: data.data };
+      }
+      return { success: false, error: data?.description || 'No se pudieron obtener las reseñas' };
+    } catch (error) {
+      return { success: false, error: 'Error de conexión' };
+    }
+  },
+
+  resumen: async (idBarberia) => {
+    try {
+      const token = await tokenManager.getToken();
+      const response = await fetch(`${API_CONFIG.URL}/resenas/barberia/${idBarberia}/resumen`, {
+        method: 'GET',
+        headers: {
+          'Content-Type': 'application/json',
+          ...(token && { Authorization: `Bearer ${token}` }),
+        },
+      });
+      const data = await response.json();
+      if (data?.code === 200) {
+        return { success: true, data: data.data };
+      }
+      return { success: false, error: data?.description || 'No se pudo obtener el resumen' };
+    } catch (error) {
+      return { success: false, error: 'Error de conexión' };
+    }
+  },
+
+};
+
+
+
+export const dashboardAPI = {
+
+  obtenerResumen: async (idBarberia) => {
+    try {
+      const token = await tokenManager.getToken();
+      const response = await fetch(`${API_CONFIG.URL}/dashboard/barberia/${idBarberia}`, {
+        method: 'GET',
+        headers: {
+          'Content-Type': 'application/json',
+          ...(token && { Authorization: `Bearer ${token}` }),
+        },
+      });
+      const data = await response.json();
+
+      if (data?.code === 200) {
+        return { success: true, data: data.data };
+      }
+      return { success: false, error: data?.description || 'No se pudo obtener el resumen' };
+    } catch (error) {
+      return { success: false, error: 'Error de conexión' };
+    }
   },
 
 };

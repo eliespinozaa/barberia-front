@@ -97,53 +97,29 @@ const EditarBarberoScreen = ({ navigation, route }) => {
     payloadExtra: null,
   });
 
-  const cerrarResultado = () => {
-    const fueExito = resultado.type === 'success';
-    const datosExtra = resultado.payloadExtra;
-    setResultado((prev) => ({ ...prev, visible: false }));
+ const cerrarResultado = () => {
+  const fueExito = resultado.type === 'success';
+  setResultado((prev) => ({ ...prev, visible: false }));
 
-    if (!fueExito) return;
+  if (!fueExito) return;
 
-    const paramsParaDetalle = esCreacion
-      ? { barberiaId, barberoCreado: datosExtra }
-      : {
-          barberiaId,
-          barberoActualizado: {
-            ...barbero,
-            nombre,
-            correo,
-            telefono,
-            activo: estatus,
-          },
-        };
+  const estado = navigation.getState();
+  const indiceActual = estado.index; 
+  const indicePadre = indiceActual - 1; 
 
-    // Trunca el stack hasta la instancia existente de DetalleBarberiaScreen,
-    // eliminando EditarBarberoScreen (y cualquier ruta después de Detalle)
-    // por completo. navigation.navigate({ key, merge }) NO hace esto: solo
-    // cambia el índice activo pero deja las rutas viejas en el array, por
-    // eso la flecha de regresar volvía a caer en el formulario.
-    const rutas = navigation.getState().routes;
-    const indiceDetalle = [...rutas].map((r) => r.name).lastIndexOf('DetalleBarberiaScreen');
-
-    if (indiceDetalle !== -1) {
-      const nuevasRutas = rutas.slice(0, indiceDetalle + 1);
-      nuevasRutas[indiceDetalle] = {
-        ...nuevasRutas[indiceDetalle],
-        params: { ...nuevasRutas[indiceDetalle].params, ...paramsParaDetalle },
-      };
-
-      navigation.dispatch(
-        CommonActions.reset({
-          ...navigation.getState(),
-          routes: nuevasRutas,
-          index: nuevasRutas.length - 1,
-        })
-      );
-    } else {
-      // Fallback: si por alguna razón no se encuentra en el stack, navega normal.
-      navigation.navigate('DetalleBarberiaScreen', paramsParaDetalle);
-    }
-  };
+  if (indicePadre >= 0) {
+    const nuevasRutas = estado.routes.slice(0, indicePadre + 1);
+    navigation.dispatch(
+      CommonActions.reset({
+        ...estado,
+        routes: nuevasRutas,
+        index: nuevasRutas.length - 1,
+      })
+    );
+  } else {
+    navigation.goBack();
+  }
+};
 
   
   const handleCambiarFoto = async () => {

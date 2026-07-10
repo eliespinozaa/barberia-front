@@ -166,35 +166,48 @@ const [loadingList, setLoadingList] = useState(true);
 
   const viewConfig = useRef({ viewAreaCoveragePercentThreshold: 50 }).current;
 
-const handleSelectBarberia = async (item) => {
+
+  const handleSelectBarberia = async (item) => {
+  setError('');
   setSelectedBar(item);
   setLoading(true);
 
   try {
     const userActual = await tokenManager.getUser();
+    if (!userActual?.id) {
+      throw new Error('No se encontró sesión activa');
+    }
+
     const res = await clienteAPI.asociarBarberia(item.id, userActual.id);
-
-    if (res.success) {
-      const userActualizado = {
-        ...userActual,
-        clienteAsociado: item.id,
-        barberiaInfo: item,
-      };
-      // saveToken guarda token + user juntos, solo actualizamos el user en AsyncStorage
-      await AsyncStorage.setItem('@barber_user', JSON.stringify(userActualizado));
-
-      navigation.replace('ClientHomeScreen', {
-        user: userActualizado,
-        barberia: item,
-      });
-    } else {
+    if (!res.success) {
       setLoading(false);
       setError(res.error || 'No se pudo asociar la barbería');
+      return;
     }
+
+    const { imagen, ...itemSinImagen } = item;
+
+    const userActualizado = {
+      ...userActual,
+      clienteAsociado: item.id,
+      barberiaInfo: itemSinImagen,
+    };
+
+    try {
+      await AsyncStorage.setItem('@barber_user', JSON.stringify(userActualizado));
+    } catch (storageError) {
+      console.log('⚠️ No se pudo persistir localmente:', storageError?.message);
+    }
+
+    navigation.replace('ClientHomeScreen', {
+      user: userActualizado,
+      barberia: item,
+    });
+
   } catch (e) {
-    console.log('Error handleSelectBarberia:', e); // ← para ver qué truena exactamente
+    console.log('❌ Excepción en handleSelectBarberia:', e?.message || e);
     setLoading(false);
-    setError('Error de conexión');
+    setError(e?.message || 'Error de conexión');
   }
 };
 
