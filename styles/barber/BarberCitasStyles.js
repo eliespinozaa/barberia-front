@@ -24,8 +24,6 @@ const createStyles = (width, theme) => {
       backgroundColor: theme.colors.background,
     },
 
-    /* ── Header ── */
-   
     backBtn: {
       width:           40,
       height:          40,
@@ -35,8 +33,6 @@ const createStyles = (width, theme) => {
       alignItems:      'center',
     },
 
-
- 
     /* ── Tabs ── */
     tabsRow: {
       flexDirection:     'row',
@@ -61,7 +57,7 @@ const createStyles = (width, theme) => {
       fontWeight: '700',
     },
     tabTextActive: {
-      color: WHITE,
+      color: "#FFFFFF",
     },
 
     /* ── Body ── */
@@ -73,30 +69,30 @@ const createStyles = (width, theme) => {
       paddingBottom:     40,
     },
 
-sectionLabel: {
-  color:         MUTED,
-  fontSize:      12,
-  fontWeight:    '700',
-  letterSpacing: 0.5,
-  textTransform: 'uppercase',
-  textAlign:     'center',
-  alignSelf:     'flex-start',
-  width:         isSmall ? '47%' : 190,  
-  marginBottom:  14,
-  marginTop:     8,
-},
-sectionLabelEnCurso: {
-  color:         MUTED,
-  fontSize:      12,
-  fontWeight:    '700',
-  letterSpacing: 0.5,
-  textTransform: 'uppercase',
-  textAlign:     'center',
-  alignSelf:     'flex-start',
-  width:         isSmall ? '100%' : 220,  
-  marginBottom:  14,
-  marginTop:     8,
-},
+    sectionLabel: {
+      color:         MUTED,
+      fontSize:      12,
+      fontWeight:    '700',
+      letterSpacing: 0.5,
+      textTransform: 'uppercase',
+      textAlign:     'center',
+      alignSelf:     'flex-start',
+      width:         isSmall ? '47%' : 190,
+      marginBottom:  14,
+      marginTop:     8,
+    },
+    sectionLabelEnCurso: {
+      color:         MUTED,
+      fontSize:      12,
+      fontWeight:    '700',
+      letterSpacing: 0.5,
+      textTransform: 'uppercase',
+      textAlign:     'center',
+      alignSelf:     'flex-start',
+      width:         isSmall ? '100%' : 220,
+      marginBottom:  14,
+      marginTop:     8,
+    },
 
     /* ── Card en curso (una sola, más ancha) ── */
     enCursoWrap: {
@@ -125,19 +121,18 @@ sectionLabelEnCurso: {
     },
     citaCardEnCurso: {
       backgroundColor: CARD_BG_ACTIVA,
-     
     },
 
     citaCardFinalizada: {
-  opacity: 0.55,
-},
-citaEstadoBadge: {
-  marginTop: 8,
-  fontSize: 12,
-  fontWeight: '600',
-  color: theme.mode === 'dark' ? 'rgba(255,255,255,0.6)' : 'rgba(0,0,0,0.5)',
-  textAlign: 'center',
-},
+      opacity: 0.55,
+    },
+    citaEstadoBadge: {
+      marginTop: 8,
+      fontSize: 12,
+      fontWeight: '600',
+      color: theme.mode === 'dark' ? 'rgba(255,255,255,0.6)' : 'rgba(0,0,0,0.5)',
+      textAlign: 'center',
+    },
 
     citaHora: {
       color:        WHITE,
@@ -220,9 +215,7 @@ citaEstadoBadge: {
       textAlign:    'center',
     },
 
- 
-
-    /* ── Calendario (portado de AgendarCita.js) ── */
+    /* ── Calendario ── */
     calendarBox: {
       backgroundColor: CARD_BG,
       borderRadius:    16,
@@ -300,65 +293,60 @@ citaEstadoBadge: {
       fontWeight: '700',
     },
 
-
-
-
     header: {
-  paddingHorizontal: isSmall ? 16 : 28,
-  paddingVertical:   isSmall ? 14 : 18,
-  gap:               isSmall ? 10 : 12,
-  position:          'relative',
-},
-headerTopRow: {
-  flexDirection:  'row',
-  alignItems:     'center',
-  justifyContent: isSmall ? 'flex-start' : 'space-between',
-  gap:             12,
-},
-headerTitle: {
-  flex:       1,
-  color:      WHITE,
-  fontSize:   isSmall ? 15 : 18,
-  fontWeight: '700',
-},
-headerPillWrap: {
-  ...(isSmall
-    ? { alignItems: 'center' }                       
-    : {
-        position:  'absolute',
-        left:      '50%',
-        top:       '50%',
-        transform: [{ translateX: -40 }, { translateY: -20 }],
-      }),
-},
-headerPill: {
-  backgroundColor:   '#FFFFFF',
-  borderRadius:      20,
-  paddingVertical:   10,
-  paddingHorizontal: 22,
-},
-headerPillText: {
-  color:      '#0B1014',
-  fontSize:   14,
-  fontWeight: '700',
-},
+      paddingHorizontal: isSmall ? 16 : 28,
+      paddingVertical:   isSmall ? 14 : 18,
+      gap:               isSmall ? 10 : 12,
+      position:          'relative',
+    },
+    headerTopRow: {
+      flexDirection:  'row',
+      alignItems:     'center',
+      justifyContent: isSmall ? 'flex-start' : 'space-between',
+      gap:             12,
+    },
+    headerTitle: {
+      flex:       1,
+      color:      WHITE,
+      fontSize:   isSmall ? 15 : 18,
+      fontWeight: '700',
+    },
+    headerPillWrap: {
+      ...(isSmall
+        ? { alignItems: 'center' }
+        : {
+            position:  'absolute',
+            left:      '50%',
+            top:       '50%',
+            transform: [{ translateX: -40 }, { translateY: -20 }],
+          }),
+    },
+    headerPill: {
+      backgroundColor:   '#FFFFFF',
+      borderRadius:      20,
+      paddingVertical:   10,
+      paddingHorizontal: 22,
+    },
+    headerPillText: {
+      color:      '#0B1014',
+      fontSize:   14,
+      fontWeight: '700',
+    },
 
-
-barberoGrupo: {
-  marginBottom: 24,
-},
-barberoHeaderRow: {
-  flexDirection: 'row',
-  alignItems:    'center',
-  gap:           6,
-  marginBottom:  12,
-},
-barberoHeaderText: {
-  color:      WHITE,
-  fontSize:   14,
-  fontWeight: '800',
-},
-
+    barberoGrupo: {
+      marginBottom: 24,
+    },
+    barberoHeaderRow: {
+      flexDirection: 'row',
+      alignItems:    'center',
+      gap:           6,
+      marginBottom:  12,
+    },
+    barberoHeaderText: {
+      color:      WHITE,
+      fontSize:   14,
+      fontWeight: '800',
+    },
   });
 };
 

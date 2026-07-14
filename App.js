@@ -41,6 +41,15 @@ import AdminCitasScreen from './screens/owner/AdminCitasScreen';
 
 
 import ClienteAgendarCitaScreen from './screens/client/ClienteAgendarCitaScreen';
+import ClienteCitasScreen from './screens/client/ClienteCitasScreen';
+import ClienteEditarCitasScreen from './screens/client/ClienteEditarCitasScreen';
+
+
+import BarberCitasScreen from './screens/barber/BarberCitasScreen';
+import BarberHorariosScreen from './screens/barber/BarberHorariosScreen';
+import BarberResenasScreen from './screens/barber/BarberResenasScreen';
+
+
 
 
 
@@ -176,6 +185,14 @@ export default function App() {
 
 
 <Stack.Screen name="ClienteAgendarCitaScreen" component={ClienteAgendarCitaScreen} options={{ gestureEnabled: false }} />
+<Stack.Screen name="ClienteCitasScreen" component={ClienteCitasScreen} options={{ gestureEnabled: false }} />
+<Stack.Screen name="ClienteEditarCitasScreen" component={ClienteEditarCitasScreen} options={{ gestureEnabled: false }} />
+
+
+<Stack.Screen name="BarberCitasScreen" component={BarberCitasScreen} options={{ gestureEnabled: false }} />
+<Stack.Screen name="BarberHorariosScreen" component={BarberHorariosScreen} options={{ gestureEnabled: false }} />
+<Stack.Screen name="BarberResenasScreen" component={BarberResenasScreen} options={{ gestureEnabled: false }} />
+
 
 
 

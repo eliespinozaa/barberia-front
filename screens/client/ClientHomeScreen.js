@@ -144,7 +144,7 @@ const ClientHomeScreen = ({ route, navigation }) => {
   const abrirEnMaps = () => {
     if (!barberia?.direccion) return;
     const query = encodeURIComponent(
-      `${barberia.nombre} ${barberia.direccion}`,
+      `${barberia.direccion}`,
     );
     const url = Platform.select({
       ios: `maps:0,0?q=${query}`,
@@ -187,7 +187,7 @@ const ClientHomeScreen = ({ route, navigation }) => {
             <TouchableOpacity onPress={() => { setDropdownVisible(false); navigation.navigate('ClienteAgendarCitaScreen'); }}>
               <Text style={styles.navLink}>Agendar cita</Text>
             </TouchableOpacity>
-            <TouchableOpacity onPress={() => { setDropdownVisible(false); navigation.navigate('MisCitasScreen'); }}>
+            <TouchableOpacity onPress={() => { setDropdownVisible(false); navigation.navigate('ClienteCitasScreen'); }}>
               <Text style={styles.navLink}>Mis citas</Text>
             </TouchableOpacity>
           </View>
@@ -380,7 +380,7 @@ const ClientHomeScreen = ({ route, navigation }) => {
             <Ionicons name="calendar-outline" size={22} color="#888" />
             <Text style={styles.bottomNavText}>Agendar</Text>
           </TouchableOpacity>
-          <TouchableOpacity style={styles.bottomNavItem}>
+          <TouchableOpacity style={styles.bottomNavItem} onPress={() => navigation.navigate('ClienteCitasScreen')}>
             <Ionicons name="time-outline" size={22} color="#888" />
             <Text style={styles.bottomNavText}>Mis citas</Text>
           </TouchableOpacity>

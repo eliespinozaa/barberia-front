@@ -7,15 +7,13 @@ const createStyles = (width, theme) => {
 
   const NAVBAR        = '#0B1014';
   const CONTENT_MAX_W = isSmall ? '100%' : 560;
+  const AVATAR_BG     = '#D9D9D9';
 
-  const CARD_BG      = isDark ? 'rgba(255,255,255,0.04)' : '#FFFFFF';
+  const CARD_BG      = isDark ? 'rgba(255,255,255,0.04)' : '#F5F5F5';
+  const INPUT_BG     = isDark ? '#1A2230' : '#FFFFFF';
+  const INPUT_BORDER = isDark ? 'rgba(255,255,255,0.1)' : '#D8D8D8';
   const WHITE        = isDark ? '#FFFFFF' : '#1A1A1A';
   const MUTED        = isDark ? 'rgba(255,255,255,0.5)' : 'rgba(0,0,0,0.5)';
-  const BORDER       = isDark ? 'rgba(255,255,255,0.15)' : 'rgba(0,0,0,0.12)';
-  const INPUT_BG     = isDark ? 'rgba(255,255,255,0.06)' : 'rgba(0,0,0,0.04)';
-  const BTN_BG       = isDark ? '#FFFFFF' : '#1A1A1A';
-  const BTN_TEXT     = isDark ? '#1A1A1A' : '#FFFFFF';
-  const DANGER_RED   = '#EF4444';
 
   return StyleSheet.create({
     container: {
@@ -23,7 +21,6 @@ const createStyles = (width, theme) => {
       backgroundColor: theme.colors.background,
     },
 
-    /* ── Header ── */
     header: {
       flexDirection:     'row',
       alignItems:        'center',
@@ -55,7 +52,6 @@ const createStyles = (width, theme) => {
       fontWeight: '700',
     },
 
-    /* ── Body ── */
     body: { flex: 1 },
     bodyInner: {
       padding:       isSmall ? 16 : 28,
@@ -67,133 +63,232 @@ const createStyles = (width, theme) => {
       maxWidth: CONTENT_MAX_W,
     },
 
-    /* ── Avatar ── */
-    avatarWrap: {
+    avatarSection: {
       alignItems:   'center',
-      marginBottom: 24,
+      marginTop:    isSmall ? 16 : 24,
+      marginBottom: isSmall ? 18 : 26,
     },
-    avatarCircle: {
-      width:           96,
-      height:          96,
-      borderRadius:    48,
-      backgroundColor: '#D9D9D9',
+    avatarWrap: {
+      width:           80,
+      height:          80,
+      borderRadius:    40,
+      backgroundColor: AVATAR_BG,
       justifyContent:  'center',
       alignItems:      'center',
+      marginBottom:    8,
       overflow:        'hidden',
     },
     avatarImage: {
-      width:  96,
-      height: 96,
+      width:  '100%',
+      height: '100%',
     },
-    avatarEditBadge: {
-      position:        'absolute',
-      bottom:          0,
-      right:           '34%',
-      width:           30,
-      height:          30,
-      borderRadius:    15,
-      backgroundColor: BTN_BG,
-      justifyContent:  'center',
-      alignItems:      'center',
-      borderWidth:     2,
-      borderColor:     theme.colors.background,
+    avatarLabel: {
+      color:      WHITE,
+      fontSize:   12,
+      fontWeight: '700',
     },
 
-    /* ── Card ── */
     card: {
-      backgroundColor: CARD_BG,
-      borderRadius:    18,
-      padding:         isSmall ? 18 : 24,
-      marginBottom:    18,
-      ...(isWeb && { boxShadow: isDark ? '0px 4px 14px rgba(0,0,0,0.3)' : '0px 4px 14px rgba(0,0,0,0.1)' }),
-    },
-    cardTitle: {
-      color:        WHITE,
-      fontSize:     15,
-      fontWeight:   '800',
-      marginBottom: 18,
-      letterSpacing: 0.3,
+      width:             '100%',
+      backgroundColor:   CARD_BG,
+      borderRadius:      isSmall ? 16 : 20,
+      paddingHorizontal: isSmall ? 16 : 24,
+      paddingTop:        isSmall ? 18 : 24,
+      paddingBottom:     isSmall ? 16 : 22,
+      ...(isWeb && { boxShadow: isDark ? '0px 4px 20px rgba(0,0,0,0.3)' : '0px 4px 20px rgba(0,0,0,0.1)' }),
     },
 
-    /* ── Campos ── */
-    fieldBlock: {
-      marginBottom: 16,
+    formGrid: {
+      flexDirection:  'row',
+      flexWrap:       'wrap',
+      justifyContent: 'space-between',
     },
-    fieldLabel: {
+    column: {
+      width:        isSmall ? '100%' : '48%',
+      marginBottom: isSmall ? 14 : 18,
+    },
+
+    label: {
       color:        WHITE,
       fontSize:     13,
       fontWeight:   '700',
-      marginBottom: 6,
+      marginBottom: isSmall ? 6 : 8,
     },
-    fieldInput: {
+    inputRow: {
+      flexDirection:     'row',
+      alignItems:        'center',
       backgroundColor:   INPUT_BG,
+      borderColor:       INPUT_BORDER,
+      borderRadius:      24,
       borderWidth:       1,
-      borderColor:       BORDER,
-      borderRadius:      12,
-      paddingHorizontal: 14,
-      paddingVertical:   Platform.OS === 'ios' ? 12 : 10,
-      color:             WHITE,
-      fontSize:          14,
-      fontWeight:        '500',
-      ...(Platform.OS === 'web' && { outlineStyle: 'none' }),
+      paddingHorizontal: 16,
+      height:            isSmall ? 42 : 46,
+      overflow:          'hidden',
     },
-    fieldInputRow: {
-      flexDirection: 'row',
-      alignItems:    'center',
+    input: {
+      flex:     1,
+      minWidth: 0,
+      color:    WHITE,
+      fontSize: isSmall ? 13 : 14,
+      ...(isWeb && { outlineWidth: 0 }),
+    },
+    eyeBtn: {
+      flexShrink: 0,
+      padding:    4,
+      marginLeft: 6,
+    },
+
+    /* ── Dropdown (Rol / Barbería) ── */
+    dropdownTrigger: {
+      flexDirection:     'row',
+      alignItems:        'center',
+      justifyContent:    'space-between',
       backgroundColor:   INPUT_BG,
+      borderColor:       INPUT_BORDER,
+      borderRadius:      24,
       borderWidth:       1,
-      borderColor:       BORDER,
-      borderRadius:      12,
-      paddingHorizontal: 14,
+      paddingHorizontal: 16,
+      height:            isSmall ? 42 : 46,
     },
-    fieldInputFlex: {
+    dropdownTriggerDisabled: {
+      opacity: 0.5,
+    },
+    dropdownTriggerText: {
+      color:      WHITE,
+      fontSize:   isSmall ? 13 : 14,
+      fontWeight: '600',
+    },
+    dropdownOverlay: {
       flex:            1,
-      paddingVertical: Platform.OS === 'ios' ? 12 : 10,
-      color:           WHITE,
-      fontSize:        14,
-      fontWeight:      '500',
-      ...(Platform.OS === 'web' && { outlineStyle: 'none' }),
+      backgroundColor: 'rgba(0,0,0,0.3)',
+      justifyContent:  'center',
+      alignItems:      'center',
     },
-    fieldHint: {
-      color:     MUTED,
-      fontSize:  12,
-      marginTop: 6,
+    dropdownMenu: {
+      backgroundColor: isDark ? '#1A2230' : '#FFFFFF',
+      borderRadius:    14,
+      padding:         8,
+      minWidth:        220,
+      maxHeight:       320,
+      ...(isWeb && { boxShadow: '0px 8px 24px rgba(0,0,0,0.4)' }),
     },
-
-    /* ── Botón guardar ── */
-    saveBtn: {
-      backgroundColor:   BTN_BG,
-      borderRadius:      20,
-      paddingVertical:   14,
-      alignItems:        'center',
-      marginTop:         6,
+    dropdownMenuItem: {
+      paddingHorizontal: 16,
+      paddingVertical:   12,
+      borderRadius:      10,
     },
-    saveBtnText: {
-      color:      BTN_TEXT,
-      fontSize:   14,
-      fontWeight: '800',
-    },
-
-    saveBtnSecondary: {
-      backgroundColor:   'transparent',
-      borderWidth:       1,
-      borderColor:       BORDER,
-      borderRadius:      20,
-      paddingVertical:   14,
-      alignItems:        'center',
-      marginTop:         6,
-    },
-    saveBtnSecondaryText: {
+    dropdownMenuItemText: {
       color:      WHITE,
       fontSize:   14,
-      fontWeight: '800',
+      fontWeight: '500',
     },
 
-    errorText: {
-      color:        DANGER_RED,
-      fontSize:     12,
-      fontWeight:   '600',
-      marginTop:    6,
+    statusRow: {
+  flexDirection:  'row',
+  alignItems:     'center',
+  justifyContent: 'space-between',
+  height:         isSmall ? 42 : 46,
+},
+statusLabel: {
+  color:      WHITE,
+  fontSize:   13,
+  fontWeight: '600',
+},
+
+    /* ── Switch "Cambiar contraseña?" ── */
+    switchRow: {
+      flexDirection:  'row',
+      alignItems:     'center',
+      justifyContent: 'space-between',
+      marginBottom:   4,
+    },
+
+    /* ── Botón "Restablecer contraseña" ── */
+    resetBtn: {
+      flexDirection:   'row',
+      alignItems:      'center',
+      justifyContent:  'center',
+      backgroundColor: isDark ? '#FFFFFF' : '#1A1A1A',
+      borderRadius:    24,
+      height:          isSmall ? 42 : 46,
+    },
+    resetBtnText: {
+      color:      isDark ? '#1A1A1A' : '#FFFFFF',
+      fontSize:   13,
+      fontWeight: '700',
+    },
+
+    strengthWrap: {
+      flexDirection: 'row',
+      alignItems:    'center',
+      gap:           8,
+      marginTop:     8,
+    },
+    strengthBarTrack: {
+      flex:            1,
+      height:          6,
+      borderRadius:    3,
+      backgroundColor: isDark ? 'rgba(255,255,255,0.15)' : '#E0E0E0',
+      overflow:        'hidden',
+    },
+    strengthBarFill: {
+      height:       '100%',
+      borderRadius: 3,
+    },
+    strengthLabel: {
+      fontSize:   12,
+      fontWeight: '700',
+      minWidth:   55,
+      textAlign:  'right',
+    },
+    requirementsGrid: {
+      flexDirection: 'row',
+      flexWrap:      'wrap',
+      marginTop:     8,
+      gap:           6,
+    },
+    requirementItem: {
+      flexDirection: 'row',
+      alignItems:    'center',
+      gap:           4,
+      width:         '48%',
+    },
+    requirementText: {
+      fontSize:   11,
+      color:      MUTED,
+      fontWeight: '600',
+    },
+    requirementTextMet: {
+      color: '#22C55E',
+    },
+    matchRow: {
+      flexDirection: 'row',
+      alignItems:    'center',
+      gap:           6,
+      marginTop:     6,
+    },
+    matchText: {
+      fontSize:   12,
+      fontWeight: '600',
+    },
+
+    btn: {
+      flexDirection:   'row',
+      alignItems:      'center',
+      justifyContent:  'center',
+      gap:             8,
+      backgroundColor: isDark ? '#FFFFFF' : '#1A1A1A',
+      borderRadius:    24,
+      height:          isSmall ? 46 : 50,
+      marginTop:       isSmall ? 8 : 12,
+      alignSelf:       'center',
+      width:           isSmall ? '100%' : 240,
+    },
+    btnText: {
+      color:         isDark ? '#1A1A1A' : '#FFFFFF',
+      fontSize:      isSmall ? 14 : 15,
+      fontWeight:    '700',
+      letterSpacing: 0.2,
     },
   });
 };

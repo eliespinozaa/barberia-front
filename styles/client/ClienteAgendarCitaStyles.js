@@ -531,7 +531,7 @@ const GRIS_SOBRE_BLANCO = 'rgba(11,17,32,.70)';
 
 
    confirmarCard: {
-  backgroundColor: isDark ? '#1A2230' : '#FFFFFF',
+  backgroundColor: isDark ? '#D9D9D9' : '#D9D9D9',
   borderRadius: 20,
   padding: 22,
   alignSelf: 'center',
@@ -539,7 +539,7 @@ const GRIS_SOBRE_BLANCO = 'rgba(11,17,32,.70)';
   ...(isWeb && { boxShadow: isDark ? '0px 4px 14px rgba(0,0,0,0.5)' : '0px 4px 14px rgba(0,0,0,0.18)' }),
 },
 confirmarTitulo: {
-  color: isDark ? '#FFFFFF' : '#1A1A1A',
+  color: isDark ? '#1A1A1A' : '#1A1A1A',
   fontSize: 18,
   fontWeight: '800',
   textAlign: 'center',
@@ -554,22 +554,22 @@ confirmarFila: {
   borderBottomColor: isDark ? 'rgba(255,255,255,0.10)' : 'rgba(0,0,0,0.08)',
 },
 confirmarLabel: {
-  color: isDark ? '#FFFFFF' : '#1A1A1A',
+  color: isDark ? '#1A1A1A' : '#1A1A1A',
   fontSize: 15,
   fontWeight: '800',
 },
 confirmarValor: {
-  color: isDark ? 'rgba(255,255,255,0.65)' : '#6B7280',
+  color: isDark ? '#1A1A1A' : '#1A1A1A',
   fontSize: 13,
   fontWeight: '600',
 },
 confirmarValorMuted: {
-  color: isDark ? 'rgba(255,255,255,0.65)' : '#6B7280',
+  color: isDark ? '#1A1A1A' : '#6B7280',
   fontSize: 13,
   fontWeight: '600',
 },
 confirmarValorFuerte: {
-  color: isDark ? '#FFFFFF' : '#1A1A1A',
+  color: isDark ? '#1A1A1A' : '#1A1A1A',
   fontSize: 14,
   fontWeight: '800',
 },

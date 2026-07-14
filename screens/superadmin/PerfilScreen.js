@@ -5,14 +5,16 @@ import {
   ScrollView,
   TouchableOpacity,
   TextInput,
-  Image,
+  Image,  
+  Switch,
+  Platform 
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import { useWindowDimensions } from 'react-native';
 import { useFocusEffect } from '@react-navigation/native';
 import { useTheme } from '../../context/ThemeContext';
-import createStyles from '../../styles/superadmin/EditarUsuarioStyles';
+import createStyles from '../../styles/superadmin/PerfilStyles';
 import * as ImagePicker from 'expo-image-picker';
 import LoadingOverlay from '../../components/LoadingOverlay';
 import ResultModal from '../../components/ResultModal';
@@ -54,6 +56,8 @@ const PerfilScreen = ({ navigation }) => {
   const [showActual, setShowActual] = useState(false);
   const [showNueva, setShowNueva] = useState(false);
   const [showConfirmar, setShowConfirmar] = useState(false);
+
+const [estatus, setEstatus] = useState(true);
 
   const passwordChecks = {
     length: nuevaPassword.length >= 8,
@@ -99,6 +103,7 @@ const PerfilScreen = ({ navigation }) => {
     setCorreo(u.email || u.correo || '');
     setTelefono(u.telefono || '');
     setFoto(u.fotoPerfil || null);
+setEstatus(u.estado === 1 || u.estado === true || u.activo === true);
     setCargando(false);
   }, []);
 
@@ -193,16 +198,17 @@ const PerfilScreen = ({ navigation }) => {
     const apellidoSeparado = partes.slice(1).join(' ') || '';
 
     const payload = {
-      nombre: nombreSeparado,
-      apellido: apellidoSeparado,
-      correo,
-      telefono,
-      fotoPerfil: fotoFinal,
-      ...(mostrarPassword && {
-        passwordActual,
-        nuevaPassword,
-      }),
-    };
+  nombre: nombreSeparado,
+  apellido: apellidoSeparado,
+  correo,
+  telefono,
+  estado: estatus ? 1 : 0,
+  fotoPerfil: fotoFinal,
+  ...(mostrarPassword && {
+    passwordActual,
+    nuevaPassword,
+  }),
+};
 
     const res = await usuariosAPI.actualizar(usuarioId, payload);
     setLoading(false);
@@ -319,15 +325,43 @@ const PerfilScreen = ({ navigation }) => {
                 </View>
               </View>
 
-              {/* ── Botón "Restablecer contraseña" ── */}
-              {!mostrarPassword && (
-                <View style={styles.column}>
-                  <Text style={styles.label}> </Text>
-                  <TouchableOpacity style={styles.resetBtn} onPress={() => setMostrarPassword(true)}>
-                    <Text style={styles.resetBtnText}>Cambiar contraseña</Text>
-                  </TouchableOpacity>
-                </View>
-              )}
+<View style={styles.column}>
+  <Text style={styles.label}>Estatus:</Text>
+  <View style={styles.statusRow}>
+    <Text style={styles.statusLabel}>
+      {estatus ? 'Activo' : 'Inactivo'}
+    </Text>
+    <Switch
+      value={estatus}
+      onValueChange={setEstatus}
+      trackColor={{ false: '#3A3A3A', true: '#22C55E' }}
+      thumbColor="#FFFFFF"
+    />
+  </View>
+</View>
+
+{/* ── Switch "Cambiar contraseña?" ── */}
+<View style={styles.column}>
+  <Text style={styles.label}>Cambiar contraseña?</Text>
+  <View style={styles.statusRow}>
+    <Text style={styles.statusLabel}>
+      {mostrarPassword ? 'Sí' : 'No'}
+    </Text>
+    <Switch
+      value={mostrarPassword}
+      onValueChange={(val) => {
+        setMostrarPassword(val);
+        if (!val) {
+          setPasswordActual('');
+          setNuevaPassword('');
+          setConfirmarPassword('');
+        }
+      }}
+      trackColor={{ false: '#3A3A3A', true: '#22C55E' }}
+      thumbColor="#FFFFFF"
+    />
+  </View>
+</View>
 
               {mostrarPassword && (
                 <>
@@ -420,29 +454,6 @@ const PerfilScreen = ({ navigation }) => {
                     )}
                   </View>
 
-                  <View style={styles.column}>
-                    <Text style={styles.label}> </Text>
-                   <TouchableOpacity
-  style={[
-    styles.resetBtn,
-    {
-      backgroundColor: 'transparent',
-      borderWidth: 1,
-      borderColor: isDark ? 'rgba(255,255,255,0.3)' : 'rgba(0,0,0,0.25)',
-    },
-  ]}
-  onPress={() => {
-    setMostrarPassword(false);
-    setPasswordActual('');
-    setNuevaPassword('');
-    setConfirmarPassword('');
-  }}
->
-  <Text style={[styles.resetBtnText, { color: isDark ? '#FFFFFF' : '#1A1A1A' }]}>
-    Cancelar cambio
-  </Text>
-</TouchableOpacity>
-                  </View>
                 </>
               )}
 

@@ -1,4 +1,4 @@
-import React, { useState, useCallback, useEffect, useMemo } from 'react';
+import React, { useState, useCallback } from 'react';
 import {
   View,
   Text,
@@ -11,8 +11,8 @@ import { Ionicons } from '@expo/vector-icons';
 import { useWindowDimensions } from 'react-native';
 import { useFocusEffect } from '@react-navigation/native';
 import { useTheme } from '../../context/ThemeContext';
-import createStyles from '../../styles/owner/AdminCitasStyles';
-import { citaAPI, barberoAPI, usuariosAPI } from '../../config/api';
+import createStyles from '../../styles/barber/BarberCitasStyles';
+import { citaAPI, barberoAPI, tokenManager } from '../../config/api';
 import LoadingOverlay from '../../components/LoadingOverlay';
 
 const MESES = [
@@ -29,7 +29,7 @@ const formatearFechaISO = (date) => {
   return `${y}-${m}-${d}`;
 };
 
-// ── Calendario mensual, portado de AgendarCita.js ──
+// ── Calendario mensual (igual al de AdminCitasScreen) ──
 function Calendario({ selected, onSelect, styles }) {
   const today = new Date();
   const [viewYear, setViewYear] = useState(selected?.year ?? today.getFullYear());
@@ -75,7 +75,6 @@ function Calendario({ selected, onSelect, styles }) {
         <Text style={styles.calendarMonthTitle}>
           {MESES[viewMonth]} de {viewYear}
         </Text>
-
         <View style={styles.calendarNav}>
           <TouchableOpacity onPress={prevMonth} style={styles.calendarNavBtn} activeOpacity={0.7}>
             <Ionicons name="chevron-back" size={18} color={styles.calendarNavIconColor.color} />
@@ -97,7 +96,6 @@ function Calendario({ selected, onSelect, styles }) {
           {cells.slice(rowIdx * 7, rowIdx * 7 + 7).map((d, colIdx) => {
             const sel = isSelected(d);
             const tod = isToday(d);
-
             return (
               <TouchableOpacity
                 key={colIdx}
@@ -130,8 +128,8 @@ function Calendario({ selected, onSelect, styles }) {
   );
 }
 
-// ── Tarjeta de una cita ──
-const CitaCard = ({ cita, styles, onConfirmar, onCancelar, onFinalizar, enCurso }) => {
+// ── Tarjeta de una cita (el barbero no confirma/cancela, solo finaliza si está en curso) ──
+const CitaCard = ({ cita, styles, onFinalizar, enCurso }) => {
   const finalizada = cita.estado === 'CANCELADA' || cita.estado === 'COMPLETADA';
 
   return (
@@ -149,87 +147,67 @@ const CitaCard = ({ cita, styles, onConfirmar, onCancelar, onFinalizar, enCurso 
         <TouchableOpacity style={styles.btnFinalizar} onPress={() => onFinalizar(cita.id)}>
           <Text style={styles.btnFinalizarText}>Finalizar</Text>
         </TouchableOpacity>
-      ) : finalizada ? (
-        <Text style={styles.citaEstadoBadge}>
-          {cita.estado === 'CANCELADA' ? 'Cancelada' : 'Completada'}
-        </Text>
       ) : (
-        <>
-          {cita.estado === 'PENDIENTE' && (
-            <TouchableOpacity style={styles.btnConfirmar} onPress={() => onConfirmar(cita.id)}>
-              <Text style={styles.btnConfirmarText}>Confirmar</Text>
-            </TouchableOpacity>
-          )}
-          <TouchableOpacity style={styles.btnCancelar} onPress={() => onCancelar(cita.id)}>
-            <Text style={styles.btnCancelarText}>Cancelar</Text>
-          </TouchableOpacity>
-        </>
+        <Text style={styles.citaEstadoBadge}>
+          {cita.estado === 'CANCELADA' ? 'Cancelada'
+            : cita.estado === 'COMPLETADA' ? 'Completada'
+            : cita.estado === 'CONFIRMADA' ? 'Confirmada'
+            : 'Pendiente'}
+        </Text>
       )}
     </View>
   );
 };
 
-const AdminCitasScreen = ({ navigation, route }) => {
+const BarberCitasScreen = ({ navigation }) => {
   const { width } = useWindowDimensions();
   const { theme } = useTheme();
   const styles = createStyles(width, theme);
   const isDark = theme.mode === 'dark';
   const mutedColor = isDark ? 'rgba(255,255,255,0.5)' : 'rgba(0,0,0,0.45)';
 
-  const idBarberia = route?.params?.barberiaId ?? null;
+  const [barbero, setBarbero] = useState(null);
 
-  const [tab, setTab] = useState('hoy'); // 'hoy' | 'manana' | 'calendario'
-  const [fechaSeleccionada, setFechaSeleccionada] = useState(null); // {day, month, year}
+  const [tab, setTab] = useState('hoy');
+  const [fechaSeleccionada, setFechaSeleccionada] = useState(null);
 
   const [citas, setCitas] = useState([]);
   const [cargando, setCargando] = useState(true);
   const [procesando, setProcesando] = useState(false);
   const [error, setError] = useState(null);
-const [barberosNombres, setBarberosNombres] = useState({}); // { [idBarbero]: 'Nombre Apellido' }
-
-useEffect(() => {
-  if (!idBarberia) return;
-
-  (async () => {
-    const res = await barberoAPI.listarPorBarberia(idBarberia);
-    if (!res.success) return;
-
-
-    const pares = await Promise.all(
-      res.data.map(async (b) => {
-        const idUsuario = b.idUsuario ?? b.id_usuario;
-        if (!idUsuario) return [b.id, 'Barbero'];
-
-        const resUsuario = await usuariosAPI.obtenerPorId(idUsuario);
-        const nombreCompleto = resUsuario.success
-          ? `${resUsuario.data.nombre || ''} ${resUsuario.data.apellido || ''}`.trim()
-          : '';
-
-        return [b.id, nombreCompleto || 'Barbero'];
-      })
-    );
-
-    setBarberosNombres(Object.fromEntries(pares));
-  })();
-}, [idBarberia]);
 
   const cargarCitas = useCallback(async (fecha) => {
-    if (!idBarberia || !fecha) {
-      setCargando(false);
-      return;
-    }
     setCargando(true);
     setError(null);
 
-    const res = await citaAPI.listarPorFecha(idBarberia, formatearFechaISO(fecha));
+    const user = await tokenManager.getUser();
+    if (!user?.id) {
+      setCargando(false);
+      return;
+    }
+
+    let barberoActual = barbero;
+    if (!barberoActual) {
+      const resBarbero = await barberoAPI.obtenerPorUsuario(user.id);
+      if (!resBarbero.success) {
+        setError(resBarbero.error || 'No se pudo obtener tu información de barbero');
+        setCargando(false);
+        return;
+      }
+      barberoActual = resBarbero.data;
+      setBarbero(barberoActual);
+    }
+
+    const res = await citaAPI.listarPorFecha(barberoActual.idBarberia, formatearFechaISO(fecha));
     if (res.success) {
-      setCitas(res.data);
+      const propias = res.data.filter((c) => c.idBarbero === barberoActual.id);
+      setCitas(propias);
     } else {
       setError(res.error);
       setCitas([]);
     }
     setCargando(false);
-  }, [idBarberia]);
+  }, [barbero]);
 
   useFocusEffect(
     useCallback(() => {
@@ -243,12 +221,12 @@ useEffect(() => {
         cargarCitas(new Date(fechaSeleccionada.year, fechaSeleccionada.month, fechaSeleccionada.day));
       }
       // eslint-disable-next-line react-hooks/exhaustive-deps
-    }, [tab, fechaSeleccionada, cargarCitas])
+    }, [tab, fechaSeleccionada])
   );
 
   const handleCambiarTab = (nuevoTab) => {
     if (nuevoTab === 'calendario' && tab === 'calendario') {
-      setFechaSeleccionada(null); // vuelve al grid si ya estabas ahí
+      setFechaSeleccionada(null);
       return;
     }
     setTab(nuevoTab);
@@ -260,9 +238,9 @@ useEffect(() => {
     cargarCitas(new Date(fechaObj.year, fechaObj.month, fechaObj.day));
   };
 
-  const ejecutarAccion = async (accion, idCita) => {
+  const handleFinalizar = async (idCita) => {
     setProcesando(true);
-    const res = await accion(idCita);
+    const res = await citaAPI.finalizar(idCita);
     setProcesando(false);
 
     if (res.success) {
@@ -275,36 +253,12 @@ useEffect(() => {
         cargarCitas(new Date(fechaSeleccionada.year, fechaSeleccionada.month, fechaSeleccionada.day));
       }
     } else {
-      Alert.alert('Error', res.error || 'No se pudo completar la acción');
+      Alert.alert('Error', res.error || 'No se pudo finalizar la cita');
     }
   };
 
-  const handleConfirmar = (idCita) => ejecutarAccion(citaAPI.confirmar, idCita);
-  const handleCancelar  = (idCita) => ejecutarAccion(citaAPI.cancelar, idCita);
-  const handleFinalizar = (idCita) => ejecutarAccion(citaAPI.finalizar, idCita);
-
-
-const citasPorBarbero = useMemo(() => {
-  const grupos = {};
-  citas.forEach((c) => {
-    if (!grupos[c.idBarbero]) {
-      grupos[c.idBarbero] = {
-        idBarbero: c.idBarbero,
-        nombreBarbero: barberosNombres[c.idBarbero] || 'Barbero',
-        enCurso: null,
-        siguientes: [],
-      };
-    }
-    if (c.estado === 'EN_PROCESO') {
-      grupos[c.idBarbero].enCurso = c;
-    } else {
-      grupos[c.idBarbero].siguientes.push(c);
-    }
-  });
-  return Object.values(grupos).sort((a, b) =>
-    a.nombreBarbero.localeCompare(b.nombreBarbero)
-  );
-}, [citas, barberosNombres]);
+  const citaEnCurso = citas.find((c) => c.estado === 'EN_PROCESO');
+  const siguientesCitas = citas.filter((c) => c.estado !== 'EN_PROCESO');
 
   const mostrarCalendarioGrid = tab === 'calendario' && !fechaSeleccionada;
   const mostrarListaCitas = tab === 'hoy' || tab === 'manana' || (tab === 'calendario' && fechaSeleccionada);
@@ -334,20 +288,20 @@ const citasPorBarbero = useMemo(() => {
     <SafeAreaView style={styles.container} edges={['top', 'bottom', 'left', 'right']}>
       <LoadingOverlay visible={procesando} message="Procesando..." />
 
-     <View style={styles.header}>
-  <View style={styles.headerTopRow}>
-    <TouchableOpacity style={styles.backBtn} onPress={() => navigation.goBack()}>
-      <Ionicons name="arrow-back" size={22} color="#FFFFFF" />
-    </TouchableOpacity>
-    <Text style={styles.headerTitle} numberOfLines={1}>{tituloHeader()}</Text>
-  </View>
+      <View style={styles.header}>
+        <View style={styles.headerTopRow}>
+          <TouchableOpacity style={styles.backBtn} onPress={() => navigation.goBack()}>
+            <Ionicons name="arrow-back" size={22} color="#FFFFFF" />
+          </TouchableOpacity>
+          <Text style={styles.headerTitle} numberOfLines={1}>{tituloHeader()}</Text>
+        </View>
 
-  <View style={styles.headerPillWrap}>
-    <View style={styles.headerPill}>
-      <Text style={styles.headerPillText}>Citas</Text>
-    </View>
-  </View>
-</View>
+        <View style={styles.headerPillWrap}>
+          <View style={styles.headerPill}>
+            <Text style={styles.headerPillText}>Citas</Text>
+          </View>
+        </View>
+      </View>
 
       <View style={styles.tabsRow}>
         {[
@@ -378,42 +332,28 @@ const citasPorBarbero = useMemo(() => {
 
         {mostrarListaCitas && (
           <>
-            {citas.length === 0 && !cargando ? (
+            {citaEnCurso && (
+              <>
+                <Text style={styles.sectionLabelEnCurso}>En curso</Text>
+                <View style={styles.enCursoWrap}>
+                  <CitaCard cita={citaEnCurso} styles={styles} enCurso onFinalizar={handleFinalizar} />
+                </View>
+              </>
+            )}
+
+            <Text style={styles.sectionLabel}>{labelSeccion()}</Text>
+
+            {siguientesCitas.length === 0 && !cargando ? (
               <View style={styles.emptyState}>
                 <Ionicons name="calendar-clear-outline" size={36} color={mutedColor} />
-                <Text style={styles.emptyText}>No hay citas para este día.</Text>
+                <Text style={styles.emptyText}>No tienes citas para este día.</Text>
               </View>
             ) : (
-              citasPorBarbero.map((grupo) => (
-                <View key={grupo.idBarbero} style={styles.barberoGrupo}>
-                 <View style={styles.barberoHeaderRow}>
-  <Text style={styles.barberoHeaderText}>{grupo.nombreBarbero}</Text>
-</View>
-
-                  {grupo.enCurso && (
-                    <>
-                      <Text style={styles.sectionLabelEnCurso}>En curso</Text>
-                      <View style={styles.enCursoWrap}>
-                        <CitaCard cita={grupo.enCurso} styles={styles} enCurso onFinalizar={handleFinalizar} />
-                      </View>
-                    </>
-                  )}
-
-                  {grupo.siguientes.length > 0 && (
-                    <View style={styles.citasGrid}>
-                      {grupo.siguientes.map((cita) => (
-                        <CitaCard
-                          key={cita.id}
-                          cita={cita}
-                          styles={styles}
-                          onConfirmar={handleConfirmar}
-                          onCancelar={handleCancelar}
-                        />
-                      ))}
-                    </View>
-                  )}
-                </View>
-              ))
+              <View style={styles.citasGrid}>
+                {siguientesCitas.map((cita) => (
+                  <CitaCard key={cita.id} cita={cita} styles={styles} />
+                ))}
+              </View>
             )}
           </>
         )}
@@ -422,4 +362,4 @@ const citasPorBarbero = useMemo(() => {
   );
 };
 
-export default AdminCitasScreen;
+export default BarberCitasScreen;

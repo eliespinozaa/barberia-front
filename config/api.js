@@ -2,8 +2,8 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 
 
 const URL = {
-  URL_SERVICE:       'http://localhost:8080',  
-  //URL_SERVICE:       'https://administrative-service.onrender.com',    
+  //URL_SERVICE:       'http://localhost:8080',  
+  URL_SERVICE:       'https://administrative-service.onrender.com',    
 
           
 };
@@ -778,6 +778,29 @@ eliminar: async (id) => {
       return { success: true, data: data?.data ?? null };
     }
     return { success: false, error: data?.description || 'No se pudo eliminar el barbero' };
+  } catch (error) {
+    return { success: false, error: 'Error de conexión' };
+  }
+},
+
+obtenerPorUsuario: async (idUsuario) => {
+  try {
+    const token = await tokenManager.getToken();
+    const response = await fetch(
+      `${API_CONFIG.URL}/barberos/usuario/${idUsuario}`,
+      {
+        method: 'GET',
+        headers: {
+          'Content-Type': 'application/json',
+          ...(token && { Authorization: `Bearer ${token}` }),
+        },
+      }
+    );
+    const data = await response.json();
+    if (data?.code === 200) {
+      return { success: true, data: data.data };
+    }
+    return { success: false, error: data?.description };
   } catch (error) {
     return { success: false, error: 'Error de conexión' };
   }

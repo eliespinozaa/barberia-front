@@ -1,60 +1,34 @@
-import React, { useState } from 'react';
+import React, { useState, useCallback } from 'react';
+
 import {
   View,
   Text,
   ScrollView,
   TouchableOpacity,
 } from 'react-native';
+
+import { useFocusEffect } from '@react-navigation/native';
+import { tokenManager, barberoAPI, citaAPI } from '../../config/api';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import { useWindowDimensions } from 'react-native';
 import { useTheme } from '../../context/ThemeContext';
-import { tokenManager } from '../../config/api';
 import createStyles from '../../styles/barber/BaberHomeStyles';
 
 const SIDEBAR_ITEMS = [
-  { label: 'Inicio',          icon: 'home-outline',      active: true },
-  { label: 'Mis Citas',       icon: 'calendar-outline' },
-  { label: 'Mis Horarios',    icon: 'time-outline' },
-  { label: 'Mis Reseñas',     icon: 'star-outline' },
+  { label: 'Inicio',          icon: 'home-outline',      active: true,  screen: null },
+  { label: 'Citas',       icon: 'calendar-outline',  screen: 'BarberCitasScreen' },
+  { label: 'Horario',    icon: 'time-outline',      screen: 'BarberHorariosScreen' },
+  { label: 'Reseñas',     icon: 'star-outline',      screen: 'BarberResenasScreen' },
 ];
 
-const STATS = [
-  { label: 'Citas de hoy',     value: '5',    icon: 'calendar-outline' },
-  { label: 'Completadas',      value: '3',    icon: 'checkmark-circle-outline' },
-  { label: 'Canceladas',       value: '1',    icon: 'close-circle-outline' },
-  { label: 'Calificación',     value: '9.2',  icon: 'star-outline' },
-];
-
-// Citas de ejemplo — las reemplazarás con datos reales de tu API
-const CITAS_HOY = [
-  {
-    id: '1',
-    cliente:  'Carlos Ramírez',
-    servicio: 'Corte + Barba',
-    hora:     '10:00 AM',
-    estado:   'pendiente',
-  },
-  {
-    id: '2',
-    cliente:  'Luis Hernández',
-    servicio: 'Corte Clásico',
-    hora:     '11:30 AM',
-    estado:   'completada',
-  },
-  {
-    id: '3',
-    cliente:  'Andrés Torres',
-    servicio: 'Barba',
-    hora:     '01:00 PM',
-    estado:   'pendiente',
-  },
-];
 
 const ESTADO_LABELS = {
-  pendiente:  { label: 'Pendiente',  color: '#C9A84C' },
-  completada: { label: 'Completada', color: '#4CAF50' },
-  cancelada:  { label: 'Cancelada',  color: '#F44336' },
+  PENDIENTE:  { label: 'Pendiente',  color: '#C9A84C' },
+  CONFIRMADA: { label: 'Confirmada', color: '#5AA9F7' },
+  EN_PROCESO: { label: 'En proceso', color: '#9B8CF2' },
+  COMPLETADA: { label: 'Completada', color: '#4CAF50' },
+  CANCELADA:  { label: 'Cancelada',  color: '#F44336' },
 };
 
 const BarberHomeScreen = ({ navigation }) => {
@@ -64,6 +38,77 @@ const BarberHomeScreen = ({ navigation }) => {
   const isLarge = width >= 1024;
   const [dropdownVisible, setDropdownVisible] = useState(false);
   const [drawerVisible, setDrawerVisible]     = useState(false);
+
+
+  const [cargando, setCargando] = useState(true);
+const [citasHoy, setCitasHoy] = useState([]);
+const [statsData, setStatsData] = useState({ hoy: 0, completadas: 0, canceladas: 0 });
+
+const formatearFechaISO = (date) => {
+  const y = date.getFullYear();
+  const m = String(date.getMonth() + 1).padStart(2, '0');
+  const d = String(date.getDate()).padStart(2, '0');
+  return `${y}-${m}-${d}`;
+};
+
+const irA = (screen) => {
+  if (!screen) return; 
+  navigation.navigate(screen);
+};
+
+const formatearHora = (horaStr) => {
+  if (!horaStr) return '--:--';
+  const [h, m] = horaStr.split(':');
+  const hora = parseInt(h, 10);
+  const sufijo = hora >= 12 ? 'PM' : 'AM';
+  const hora12 = hora % 12 === 0 ? 12 : hora % 12;
+  return `${hora12}:${m} ${sufijo}`;
+};
+
+const cargarDatos = useCallback(async () => {
+  setCargando(true);
+  const user = await tokenManager.getUser();
+  if (!user?.id) {
+    setCargando(false);
+    return;
+  }
+
+  const resBarbero = await barberoAPI.obtenerPorUsuario(user.id);
+  if (!resBarbero.success) {
+    setCargando(false);
+    return;
+  }
+  const barbero = resBarbero.data;
+
+  const fechaHoy = formatearFechaISO(new Date());
+
+  const resCitas = await citaAPI.listarPorFecha(barbero.idBarberia, fechaHoy);
+
+  if (resCitas.success) {
+    const propias = resCitas.data.filter((c) => c.idBarbero === barbero.id);
+    setCitasHoy(propias);
+
+    setStatsData({
+      hoy: propias.length,
+      completadas: propias.filter((c) => c.estado === 'COMPLETADA').length,
+      canceladas: propias.filter((c) => c.estado === 'CANCELADA').length,
+    });
+  }
+
+  setCargando(false);
+}, []);
+
+useFocusEffect(
+  useCallback(() => {
+    cargarDatos();
+  }, [cargarDatos])
+);
+
+const STATS = [
+  { label: 'Citas de hoy', value: String(statsData.hoy), icon: 'calendar-outline' },
+  { label: 'Completadas', value: String(statsData.completadas), icon: 'checkmark-circle-outline' },
+  { label: 'Canceladas', value: String(statsData.canceladas), icon: 'close-circle-outline' },
+];
 
   const handleLogout = async () => {
     setDropdownVisible(false);
@@ -130,19 +175,22 @@ const BarberHomeScreen = ({ navigation }) => {
             <TouchableOpacity style={styles.drawerClose} onPress={() => setDrawerVisible(false)}>
               <Ionicons name="close-outline" size={26} color="#FFFFFF" />
             </TouchableOpacity>
-            <View>
-              {SIDEBAR_ITEMS.map((item) => (
-                <TouchableOpacity
-                  key={item.label}
-                  style={styles.drawerItem}
-                  onPress={() => setDrawerVisible(false)}
-                >
-                  <Text style={[styles.drawerText, item.active && styles.drawerTextActive]}>
-                    {item.label}
-                  </Text>
-                </TouchableOpacity>
-              ))}
-            </View>
+         <View>
+  {SIDEBAR_ITEMS.map((item) => (
+    <TouchableOpacity
+      key={item.label}
+      style={styles.drawerItem}
+      onPress={() => {
+        setDrawerVisible(false);
+        irA(item.screen);
+      }}
+    >
+      <Text style={[styles.drawerText, item.active && styles.drawerTextActive]}>
+        {item.label}
+      </Text>
+    </TouchableOpacity>
+  ))}
+</View>
             <TouchableOpacity style={styles.logoutBtn} onPress={handleLogout}>
               <Ionicons name="log-out-outline" size={18} color="#FFFFFF" />
               <Text style={styles.logoutText}>Cerrar Sesión</Text>
@@ -156,15 +204,19 @@ const BarberHomeScreen = ({ navigation }) => {
         {/* ── Sidebar ── */}
         {isLarge && (
           <View style={styles.sidebar}>
-            <View style={styles.sidebarItems}>
-              {SIDEBAR_ITEMS.map((item) => (
-                <TouchableOpacity key={item.label} style={styles.sidebarItem}>
-                  <Text style={[styles.sidebarText, item.active && styles.sidebarTextActive]}>
-                    {item.label}
-                  </Text>
-                </TouchableOpacity>
-              ))}
-            </View>
+          <View style={styles.sidebarItems}>
+  {SIDEBAR_ITEMS.map((item) => (
+    <TouchableOpacity
+      key={item.label}
+      style={styles.sidebarItem}
+      onPress={() => irA(item.screen)}
+    >
+      <Text style={[styles.sidebarText, item.active && styles.sidebarTextActive]}>
+        {item.label}
+      </Text>
+    </TouchableOpacity>
+  ))}
+</View>
             <TouchableOpacity style={styles.logoutBtn} onPress={handleLogout}>
               <Ionicons name="log-out-outline" size={18} color="#FFFFFF" />
               <Text style={styles.logoutText}>Cerrar Sesión</Text>
@@ -197,30 +249,34 @@ const BarberHomeScreen = ({ navigation }) => {
               ))}
             </View>
           </View>
-
-          {/* ── Citas de hoy ── */}
-          <Text style={styles.sectionTitle}>Citas de hoy</Text>
-          {CITAS_HOY.map((cita) => {
-            const estado = ESTADO_LABELS[cita.estado] ?? ESTADO_LABELS.pendiente;
-            return (
-              <TouchableOpacity key={cita.id} style={styles.citaCard}>
-                <View style={styles.citaRow}>
-                  <View style={styles.citaInfo}>
-                    <Text style={styles.citaCliente}>{cita.cliente}</Text>
-                    <Text style={styles.citaServicio}>{cita.servicio}</Text>
-                  </View>
-                  <View style={styles.citaMeta}>
-                    <Text style={styles.citaHora}>{cita.hora}</Text>
-                    <View style={[styles.citaEstadoBadge, { borderColor: estado.color }]}>
-                      <Text style={[styles.citaEstadoText, { color: estado.color }]}>
-                        {estado.label}
-                      </Text>
-                    </View>
-                  </View>
-                </View>
-              </TouchableOpacity>
-            );
-          })}
+          
+{/* ── Citas de hoy ── */}
+<Text style={styles.sectionTitle}>Citas de hoy</Text>
+{citasHoy.length === 0 && !cargando ? (
+  <Text style={styles.greeting}>No tienes citas para hoy.</Text>
+) : (
+  citasHoy.map((cita) => {
+    const estado = ESTADO_LABELS[cita.estado] ?? ESTADO_LABELS.PENDIENTE;
+    return (
+      <TouchableOpacity key={cita.id} style={styles.citaCard}>
+        <View style={styles.citaRow}>
+          <View style={styles.citaInfo}>
+            <Text style={styles.citaCliente}>{cita.nombreCliente}</Text>
+            <Text style={styles.citaServicio}>{cita.servicio}</Text>
+          </View>
+          <View style={styles.citaMeta}>
+            <Text style={styles.citaHora}>{formatearHora(cita.hora)}</Text>
+            <View style={[styles.citaEstadoBadge, { borderColor: estado.color }]}>
+              <Text style={[styles.citaEstadoText, { color: estado.color }]}>
+                {estado.label}
+              </Text>
+            </View>
+          </View>
+        </View>
+      </TouchableOpacity>
+    );
+  })
+)}
 
         </ScrollView>
       </View>
