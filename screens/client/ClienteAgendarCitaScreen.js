@@ -197,8 +197,10 @@ const ClienteAgendarCitaScreen = ({ navigation, route }) => {
 
     const resHorario = await horarioAPI.listarPorBarberia(barberia.id);
     const horarioDelDia = resHorario.success
-      ? resHorario.data.find((h) => h.diaSemana === diaSemana && h.estado === 1)
-      : null;
+  ? resHorario.data.find(
+      (h) => h.diaSemana?.toUpperCase() === diaSemana && h.estado === 1
+    )
+  : null;
 
     if (!horarioDelDia) {
       setHorariosDisponibles([]);
