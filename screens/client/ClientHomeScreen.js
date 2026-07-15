@@ -136,16 +136,17 @@ const ClientHomeScreen = ({ route, navigation }) => {
   );
 
   const handleLogout = async () => {
-    setDropdownVisible(false);
-    await tokenManager.clearAll();
-    navigation.replace("Home");
-  };
+  setDropdownVisible(false);
+  await tokenManager.clearAll();
+  navigation.reset({
+    index: 0,
+    routes: [{ name: 'Home' }],
+  });
+};
 
   const abrirEnMaps = () => {
     if (!barberia?.direccion) return;
-    const query = encodeURIComponent(
-      `${barberia.direccion}`,
-    );
+    const query = encodeURIComponent(`${barberia.direccion}`);
     const url = Platform.select({
       ios: `maps:0,0?q=${query}`,
       android: `geo:0,0?q=${query}`,
@@ -184,10 +185,20 @@ const ClientHomeScreen = ({ route, navigation }) => {
             <TouchableOpacity>
               <Text style={styles.navLinkActive}>Inicio</Text>
             </TouchableOpacity>
-            <TouchableOpacity onPress={() => { setDropdownVisible(false); navigation.navigate('ClienteAgendarCitaScreen'); }}>
+            <TouchableOpacity
+              onPress={() => {
+                setDropdownVisible(false);
+                navigation.navigate("ClienteAgendarCitaScreen");
+              }}
+            >
               <Text style={styles.navLink}>Agendar cita</Text>
             </TouchableOpacity>
-            <TouchableOpacity onPress={() => { setDropdownVisible(false); navigation.navigate('ClienteCitasScreen'); }}>
+            <TouchableOpacity
+              onPress={() => {
+                setDropdownVisible(false);
+                navigation.navigate("ClienteCitasScreen");
+              }}
+            >
               <Text style={styles.navLink}>Mis citas</Text>
             </TouchableOpacity>
           </View>
@@ -207,33 +218,54 @@ const ClientHomeScreen = ({ route, navigation }) => {
       </View>
 
       {dropdownVisible && (
-        <View style={styles.dropdown}>
+        <>
           <TouchableOpacity
-  style={styles.dropdownItem}
-  onPress={() => { setDropdownVisible(false); navigation.navigate('PerfilScreen'); }}
->
-  <Ionicons name="person-outline" size={18} color={theme.colors.text} />
-  <Text style={styles.dropdownText}>Mi Perfil</Text>
-</TouchableOpacity>
-          <TouchableOpacity
-            style={styles.dropdownItem}
-            onPress={() => {
-              toggleTheme();
-              setDropdownVisible(false);
-            }}
-          >
-            <Ionicons name="moon-outline" size={18} color={theme.colors.text} />
-            <Text style={styles.dropdownText}>Modo Oscuro</Text>
-          </TouchableOpacity>
-          <TouchableOpacity style={styles.dropdownItem} onPress={handleLogout}>
-            <Ionicons
-              name="log-out-outline"
-              size={18}
-              color={theme.colors.text}
-            />
-            <Text style={styles.dropdownText}>Cerrar Sesión</Text>
-          </TouchableOpacity>
-        </View>
+            style={styles.dropdownBackdrop}
+            activeOpacity={1}
+            onPress={() => setDropdownVisible(false)}
+          />
+          <View style={styles.dropdown}>
+            <TouchableOpacity
+              style={styles.dropdownItem}
+              onPress={() => {
+                setDropdownVisible(false);
+                navigation.navigate("PerfilScreen");
+              }}
+            >
+              <Ionicons
+                name="person-outline"
+                size={18}
+                color={theme.colors.text}
+              />
+              <Text style={styles.dropdownText}>Mi Perfil</Text>
+            </TouchableOpacity>
+            <TouchableOpacity
+              style={styles.dropdownItem}
+              onPress={() => {
+                toggleTheme();
+                setDropdownVisible(false);
+              }}
+            >
+              <Ionicons
+                name="moon-outline"
+                size={18}
+                color={theme.colors.text}
+              />
+              <Text style={styles.dropdownText}>Modo Oscuro</Text>
+            </TouchableOpacity>
+            <TouchableOpacity
+              style={styles.dropdownItem}
+              onPress={handleLogout}
+            >
+              <Ionicons
+                name="log-out-outline"
+                size={18}
+                color={theme.colors.text}
+              />
+              <Text style={styles.dropdownText}>Cerrar Sesión</Text>
+            </TouchableOpacity>
+          </View>
+        </>
       )}
 
       <ScrollView showsVerticalScrollIndicator={false}>
@@ -376,18 +408,27 @@ const ClientHomeScreen = ({ route, navigation }) => {
               Inicio
             </Text>
           </TouchableOpacity>
-          <TouchableOpacity style={styles.bottomNavItem} onPress={() => navigation.navigate('ClienteAgendarCitaScreen')}>
+          <TouchableOpacity
+            style={styles.bottomNavItem}
+            onPress={() => navigation.navigate("ClienteAgendarCitaScreen")}
+          >
             <Ionicons name="calendar-outline" size={22} color="#888" />
             <Text style={styles.bottomNavText}>Agendar</Text>
           </TouchableOpacity>
-          <TouchableOpacity style={styles.bottomNavItem} onPress={() => navigation.navigate('ClienteCitasScreen')}>
+          <TouchableOpacity
+            style={styles.bottomNavItem}
+            onPress={() => navigation.navigate("ClienteCitasScreen")}
+          >
             <Ionicons name="time-outline" size={22} color="#888" />
             <Text style={styles.bottomNavText}>Mis citas</Text>
           </TouchableOpacity>
-         <TouchableOpacity style={styles.bottomNavItem} onPress={() => navigation.navigate('PerfilScreen')}>
-  <Ionicons name="person-outline" size={22} color="#888" />
-  <Text style={styles.bottomNavText}>Perfil</Text>
-</TouchableOpacity>
+          <TouchableOpacity
+            style={styles.bottomNavItem}
+            onPress={() => navigation.navigate("PerfilScreen")}
+          >
+            <Ionicons name="person-outline" size={22} color="#888" />
+            <Text style={styles.bottomNavText}>Perfil</Text>
+          </TouchableOpacity>
         </View>
       )}
     </SafeAreaView>

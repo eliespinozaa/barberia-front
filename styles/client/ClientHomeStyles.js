@@ -104,6 +104,14 @@ const createStyles = (width, theme) => {
       borderColor: BORDER,
       ...(isWeb && { boxShadow: "0px 8px 24px rgba(0,0,0,0.5)" }),
     },
+    dropdownBackdrop: {
+      position: "absolute",
+      top: 0,
+      left: 0,
+      right: 0,
+      bottom: 0,
+      zIndex: 998,
+    },
     dropdownItem: {
       flexDirection: "row",
       alignItems: "center",

@@ -51,10 +51,12 @@ const generarSlotsHora = (horaApertura, horaCierre) => {
 
 const ClienteEditarCitasScreen = ({ navigation, route }) => {
   const { width } = useWindowDimensions();
-  const { theme } = useTheme();
+  const { theme, toggleTheme } = useTheme();
   const styles = createStyles(width, theme);
 
   const citaOriginal = route?.params?.cita || null;
+
+  const [dropdownVisible, setDropdownVisible] = useState(false);
 
   const [cargando, setCargando]     = useState(true);
   const [procesando, setProcesando] = useState(false);
@@ -81,6 +83,12 @@ const ClienteEditarCitasScreen = ({ navigation, route }) => {
     visible: false, type: 'success', title: '', message: '',
   });
 
+  const handleLogout = async () => {
+    setDropdownVisible(false);
+    await tokenManager.clearAll();
+    navigation.replace('Home');
+  };
+
   const cargarDatos = useCallback(async () => {
     setCargando(true);
 
@@ -97,7 +105,7 @@ const ClienteEditarCitasScreen = ({ navigation, route }) => {
     }
     setBarberia(resBarberia.data);
 
-  const [resServicios, resBarberos] = await Promise.all([
+ const [resServicios, resBarberos] = await Promise.all([
   servicioAPI.listarPorBarberia(resBarberia.data.id),
   barberoAPI.listarPorBarberia(resBarberia.data.id),
 ]);
@@ -105,26 +113,32 @@ const ClienteEditarCitasScreen = ({ navigation, route }) => {
 const listaServicios = resServicios.success ? resServicios.data : [];
 const barberosCrudos = resBarberos.success ? resBarberos.data : [];
 
-const buscado = citaOriginal.barberoNombre.trim().toLowerCase(); // "elí"
-  const b = listaBarberos.find(
-    (x) => x.nombre && x.nombre.trim().toLowerCase().includes(buscado)
-  );
+const listaBarberos = await Promise.all(
+  barberosCrudos.map(async (b) => {
+    const resUsuario = await usuariosAPI.obtenerPorId(b.idUsuario);
+    return {
+      ...b,
+      nombre: resUsuario.success
+        ? (resUsuario.data.nombreCompleto || resUsuario.data.nombre || 'Barbero')
+        : 'Barbero',
+    };
+  })
+);
 
 setServicios(listaServicios);
 setBarberos(listaBarberos);
-   
 
 if (citaOriginal?.servicioNombre && !servicioId) {
-  const buscado = citaOriginal.servicioNombre.trim().toLowerCase();
+  const buscadoServicio = citaOriginal.servicioNombre.trim().toLowerCase();
   const s = listaServicios.find(
-    (x) => x.nombre && x.nombre.trim().toLowerCase() === buscado
+    (x) => x.nombre && x.nombre.trim().toLowerCase() === buscadoServicio
   );
   if (s) setServicioId(s.id);
 }
 if (citaOriginal?.barberoNombre && !barberoId) {
-  const buscado = citaOriginal.barberoNombre.trim().toLowerCase();
+  const buscadoBarbero = citaOriginal.barberoNombre.trim().toLowerCase();
   const b = listaBarberos.find(
-    (x) => x.nombre && x.nombre.trim().toLowerCase().includes(buscado)
+    (x) => x.nombre && x.nombre.trim().toLowerCase().includes(buscadoBarbero)
   );
   if (b) setBarberoId(b.id);
 }
@@ -137,9 +151,6 @@ if (citaOriginal?.barberoNombre && !barberoId) {
     cargarDatos();
   }, [cargarDatos]);
 
-  // ── Horas disponibles: dependen del horario REAL de la barbería para
-  // ese día de la semana, del barbero elegido (para no chocar con sus
-  // otras citas) y de si la fecha es hoy (para no mostrar horas pasadas).
   useEffect(() => {
     const cargarHoras = async () => {
       if (!barberia?.id || !fecha || !barberoId) {
@@ -153,8 +164,10 @@ if (citaOriginal?.barberoNombre && !barberoId) {
 
       const resHorario = await horarioAPI.listarPorBarberia(barberia.id);
       const horarioDelDia = resHorario.success
-        ? resHorario.data.find((h) => h.diaSemana === diaSemana && h.estado === 1)
-        : null;
+  ? resHorario.data.find(
+      (h) => h.diaSemana?.toUpperCase() === diaSemana && h.estado === 1
+    )
+  : null;
 
       if (!horarioDelDia) {
         setHorasDisponibles([]);
@@ -175,8 +188,7 @@ if (citaOriginal?.barberoNombre && !barberoId) {
         });
       }
 
-      // Descartamos las horas ya ocupadas por ESE barbero ese día
-      // (excluyendo la propia cita que estamos editando)
+    
       const resCitas = await citaAPI.listarPorFecha(barberia.id, fecha);
       const ocupadas = new Set();
       if (resCitas.success) {
@@ -194,8 +206,7 @@ if (citaOriginal?.barberoNombre && !barberoId) {
 
       let libres = slots.filter((h) => !ocupadas.has(h));
 
-      // Aseguramos que la hora ya asignada a esta cita siga apareciendo
-      // en la lista aunque ya haya "pasado" o esté fuera de rango.
+    
       if (hora && !libres.includes(hora)) {
         libres = [hora, ...libres];
       }
@@ -205,7 +216,6 @@ if (citaOriginal?.barberoNombre && !barberoId) {
     };
 
     cargarHoras();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [barberia, fecha, barberoId]);
 
   const servicioActual = servicios.find((s) => s.id === servicioId);
@@ -217,27 +227,26 @@ if (citaOriginal?.barberoNombre && !barberoId) {
     setHoraAbierto(false);
   };
 
+  
   const handleActualizar = async () => {
-    if (!servicioId || !barberoId || !fecha || !hora) {
-      setResultado({
-        visible: true,
-        type: 'error',
-        title: 'Faltan datos',
-        message: 'Completa servicio, barbero, fecha y hora antes de continuar.',
-      });
-      return;
-    }
-
-    setProcesando(true);
-
-    const res = await citaAPI.actualizar(citaOriginal?.id, {
-      servicioId,
-      barberoId,
-      fecha,
-      horaInicio: hora,
+  if (!servicioId || !barberoId || !fecha || !hora) {
+    setResultado({
+      visible: true,
+      type: 'error',
+      title: 'Faltan datos',
+      message: 'Completa servicio, barbero, fecha y hora antes de continuar.',
     });
+    return;
+  }
 
-    setProcesando(false);
+  setProcesando(true);
+  try {
+    const res = await citaAPI.actualizar(citaOriginal?.id, {
+  idServicio: servicioId,
+  idBarbero: barberoId,
+  fecha,
+  horaInicio: hora,
+});
 
     if (res?.success) {
       setResultado({
@@ -254,26 +263,26 @@ if (citaOriginal?.barberoNombre && !barberoId) {
         message: res?.error || 'Intenta de nuevo más tarde.',
       });
     }
-  };
+  } catch (error) {
+    setResultado({
+      visible: true,
+      type: 'error',
+      title: 'Error inesperado',
+      message: 'Ocurrió un error al actualizar la cita.',
+    });
+  } finally {
+    setProcesando(false);
+  }
+};
 
   return (
     <SafeAreaView style={styles.container} edges={['top', 'bottom', 'left', 'right']}>
       <LoadingOverlay visible={cargando} message="Cargando cita..." />
       <LoadingOverlay visible={procesando} message="Guardando cambios..." />
 
-      {/* ── Navbar ── */}
-      <View style={styles.navbar}>
-        <View style={styles.navLeft}>
-          <View style={styles.navLogoWrap}>
-            <Ionicons name="cut" size={18} color="#C9A84C" />
-          </View>
-          <Text style={styles.navBarberia}>{barberia?.nombre || 'Mi Barbería'}</Text>
-        </View>
-        <TouchableOpacity style={styles.navAvatar}>
-          <Ionicons name="person-outline" size={20} color="#FFFFFF" />
-        </TouchableOpacity>
-      </View>
+      
 
+      
       {/* ── Título + back ── */}
       <View style={styles.titleBar}>
         <TouchableOpacity style={styles.backBtn} onPress={() => navigation.goBack()}>

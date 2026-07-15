@@ -1,14 +1,15 @@
-import React, { useState } from 'react';
+import React, { useState } from "react";
 import {
   View,
   Text,
   TouchableOpacity,
   Platform,
   StyleSheet,
-  useWindowDimensions, // 🔑 reactivo a resize
-} from 'react-native';
-import { Ionicons } from '@expo/vector-icons';
-import { useTheme } from '../context/ThemeContext';
+  useWindowDimensions,
+  Image,
+} from "react-native";
+import { Ionicons } from "@expo/vector-icons";
+import { useTheme } from "../context/ThemeContext";
 
 // ─── Sub-componente NavLink ───────────────────────────────────────────────────
 const NavLink = ({ label, active, onPress, styles }) => (
@@ -28,42 +29,51 @@ const SharedNavbar = ({ navigation, currentScreen }) => {
 
   const isSmallScreen = width < 375;
   const isLargeScreen = width >= 768;
-  const isWeb         = Platform.OS === 'web';
-  const isDesktop     = isWeb && isLargeScreen;
+  const isWeb = Platform.OS === "web";
+  const isDesktop = isWeb && isLargeScreen;
 
   // Colores del tema activo
-  const NAV_BG  = theme.colors.navBackground;
-  const GOLD    = theme.colors.secondary;
-  const WHITE   = theme.colors.text;
-  const BORDER  = theme.colors.border;
+  const NAV_BG = theme.colors.navBackground;
+  const GOLD = theme.colors.secondary;
+  const WHITE = theme.colors.text;
+  const BORDER = theme.colors.border;
   const SURFACE = theme.colors.surface;
   const TEXT_SECONDARY = theme.colors.textSecondary;
   const NAV_TEXT = theme.colors.navText;
 
-  // Estilos calculados con el tema + dimensiones actuales
-  const styles = buildStyles({ isSmallScreen, isLargeScreen, isDesktop, NAV_BG, GOLD, WHITE, BORDER, SURFACE, TEXT_SECONDARY, NAV_TEXT});
+  const styles = buildStyles({
+    isSmallScreen,
+    isLargeScreen,
+    isDesktop,
+    NAV_BG,
+    GOLD,
+    WHITE,
+    BORDER,
+    SURFACE,
+    TEXT_SECONDARY,
+    NAV_TEXT,
+  });
 
-  const links = [
-    { label: 'Inicio',      screen: 'Home'        },
-    { label: 'Barberías',   screen: 'Barberias'   },
-    { label: 'Servicios',   screen: 'Servicios'   },
-    { label: 'Promociones', screen: 'Promociones' },
-    { label: 'Contacto',    screen: 'Contacto'    },
-  ];
+  const links = [];
 
   const handleNav = (screen) => {
     setMenuOpen(false);
     if (screen === currentScreen) return;
-    try { navigation.navigate(screen); } catch (_) {}
+    try {
+      navigation.navigate(screen);
+    } catch (_) {}
   };
 
   return (
     <View style={styles.navbar}>
-
       {/* ── Logo / Brand ─────────────────────────────────────────────── */}
-      <TouchableOpacity style={styles.brand} onPress={() => handleNav('Home')}>
+      <TouchableOpacity style={styles.brand} onPress={() => handleNav("Home")}>
         <View style={styles.logoPlaceholder}>
-          <Ionicons name="cut" size={20} color={GOLD} />
+          <Image
+            source={require("../assets/Logo.png")}
+            style={styles.navLogoImage}
+            resizeMode="contain"
+          />
         </View>
         <Text style={styles.brandName}>BARBER SYSTEM</Text>
       </TouchableOpacity>
@@ -85,11 +95,10 @@ const SharedNavbar = ({ navigation, currentScreen }) => {
 
       {/* ── Acciones ─────────────────────────────────────────────────── */}
       <View style={styles.navActions}>
-
         {/* Toggle tema oscuro/claro */}
         <TouchableOpacity onPress={toggleTheme} style={styles.iconButton}>
           <Ionicons
-            name={isDarkMode ? 'sunny-outline' : 'moon-outline'}
+            name={isDarkMode ? "sunny-outline" : "moon-outline"}
             size={20}
             color={GOLD}
           />
@@ -99,13 +108,13 @@ const SharedNavbar = ({ navigation, currentScreen }) => {
           <>
             <TouchableOpacity
               style={styles.btnOutline}
-              onPress={() => handleNav('Login')}
+              onPress={() => handleNav("Login")}
             >
               <Text style={styles.btnOutlineText}>Iniciar sesión</Text>
             </TouchableOpacity>
             <TouchableOpacity
               style={styles.btnSolid}
-              onPress={() => handleNav('Register')}
+              onPress={() => handleNav("Register")}
             >
               <Text style={styles.btnSolidText}>Registrarse</Text>
             </TouchableOpacity>
@@ -116,7 +125,7 @@ const SharedNavbar = ({ navigation, currentScreen }) => {
             onPress={() => setMenuOpen(!menuOpen)}
           >
             <Ionicons
-              name={menuOpen ? 'close' : 'menu'}
+              name={menuOpen ? "close" : "menu"}
               size={26}
               color={GOLD}
             />
@@ -133,10 +142,12 @@ const SharedNavbar = ({ navigation, currentScreen }) => {
               style={styles.mobileMenuItem}
               onPress={() => handleNav(l.screen)}
             >
-              <Text style={[
-                styles.mobileMenuText,
-                currentScreen === l.screen && styles.navLinkActive,
-              ]}>
+              <Text
+                style={[
+                  styles.mobileMenuText,
+                  currentScreen === l.screen && styles.navLinkActive,
+                ]}
+              >
                 {l.label}
               </Text>
             </TouchableOpacity>
@@ -146,20 +157,19 @@ const SharedNavbar = ({ navigation, currentScreen }) => {
 
           <TouchableOpacity
             style={styles.mobileMenuItem}
-            onPress={() => handleNav('Login')}
+            onPress={() => handleNav("Login")}
           >
             <Text style={styles.mobileMenuTextGold}>Iniciar sesión</Text>
           </TouchableOpacity>
 
           <TouchableOpacity
             style={[styles.mobileMenuItem, styles.mobileMenuSolid]}
-            onPress={() => handleNav('Register')}
+            onPress={() => handleNav("Register")}
           >
             <Text style={styles.btnSolidText}>Registrarse</Text>
           </TouchableOpacity>
         </View>
       )}
-
     </View>
   );
 };
@@ -174,67 +184,71 @@ const buildStyles = ({
   WHITE,
   BORDER,
   TEXT_SECONDARY,
-  NAV_TEXT
+  NAV_TEXT,
 }) =>
   StyleSheet.create({
-
     navbar: {
-      flexDirection: 'row',
-      alignItems: 'center',
-      justifyContent: 'space-between',
+      flexDirection: "row",
+      alignItems: "center",
+      justifyContent: "space-between",
       backgroundColor: NAV_BG,
       paddingHorizontal: isSmallScreen ? 16 : isLargeScreen ? 40 : 24,
       paddingVertical: isSmallScreen ? 12 : 16,
       borderBottomWidth: 1,
       borderBottomColor: BORDER,
       zIndex: 100,
-      flexWrap: 'wrap',
+      flexWrap: "wrap",
     },
 
     // ── Brand ──────────────────────────────────────────────────────────────
     brand: {
-      flexDirection: 'row',
-      alignItems: 'center',
+      flexDirection: "row",
+      alignItems: "center",
     },
     logoPlaceholder: {
       width: isSmallScreen ? 32 : 36,
       height: isSmallScreen ? 32 : 36,
-      borderRadius: 8,
-      backgroundColor: 'rgba(201,168,76,0.12)',
-      justifyContent: 'center',
-      alignItems: 'center',
+      borderRadius: isSmallScreen ? 16 : 18,
+      backgroundColor: "rgba(201,168,76,0.12)",
+      justifyContent: "center",
+      alignItems: "center",
       borderWidth: 1,
       borderColor: GOLD,
       marginRight: 10,
+      overflow: "hidden",
+    },
+    navLogoImage: {
+      width: "100%",
+      height: "100%",
     },
     brandName: {
       color: NAV_TEXT,
       fontSize: isSmallScreen ? 14 : isLargeScreen ? 18 : 15,
-      fontWeight: '800',
+      fontWeight: "800",
       letterSpacing: 1.5,
     },
 
     // ── Links desktop ──────────────────────────────────────────────────────
     navLinks: {
-      flexDirection: 'row',
-      alignItems: 'center',
+      flexDirection: "row",
+      alignItems: "center",
     },
     navLink: {
       paddingHorizontal: 14,
       paddingVertical: 6,
-      position: 'relative',
+      position: "relative",
     },
     navLinkText: {
-       color: TEXT_SECONDARY,
+      color: TEXT_SECONDARY,
       fontSize: isLargeScreen ? 14 : 13,
-      fontWeight: '500',
+      fontWeight: "500",
     },
     navLinkActive: {
       color: GOLD,
-      fontWeight: '700',
+      fontWeight: "700",
     },
     navLinkUnderline: {
-      position: 'absolute',
+      position: "absolute",
       bottom: 0,
       left: 14,
       right: 14,
@@ -245,16 +259,16 @@ const buildStyles = ({
 
     // ── Acciones ───────────────────────────────────────────────────────────
     navActions: {
-      flexDirection: 'row',
-      alignItems: 'center',
+      flexDirection: "row",
+      alignItems: "center",
     },
     iconButton: {
       padding: 8,
       borderRadius: 8,
-      backgroundColor: 'rgba(201,168,76,0.1)',
+      backgroundColor: "rgba(201,168,76,0.1)",
       marginLeft: 8,
       borderWidth: 1,
-      borderColor: 'rgba(201,168,76,0.2)',
+      borderColor: "rgba(201,168,76,0.2)",
     },
     btnOutline: {
       paddingHorizontal: isLargeScreen ? 16 : 12,
@@ -267,7 +281,7 @@ const buildStyles = ({
     btnOutlineText: {
       color: GOLD,
       fontSize: isLargeScreen ? 13 : 12,
-      fontWeight: '600',
+      fontWeight: "600",
     },
     btnSolid: {
       paddingHorizontal: isLargeScreen ? 16 : 12,
@@ -277,14 +291,14 @@ const buildStyles = ({
       marginLeft: 10,
     },
     btnSolidText: {
-      color: '#1A1A1A',
+      color: "#1A1A1A",
       fontSize: isLargeScreen ? 13 : 12,
-      fontWeight: '700',
+      fontWeight: "700",
     },
 
     // ── Menú móvil ─────────────────────────────────────────────────────────
     mobileMenu: {
-      width: '100%',
+      width: "100%",
       backgroundColor: NAV_BG,
       borderTopWidth: 1,
       borderTopColor: BORDER,
@@ -298,12 +312,12 @@ const buildStyles = ({
     mobileMenuText: {
       color: WHITE,
       fontSize: isSmallScreen ? 14 : 15,
-      fontWeight: '500',
+      fontWeight: "500",
     },
     mobileMenuTextGold: {
       color: GOLD,
       fontSize: isSmallScreen ? 14 : 15,
-      fontWeight: '600',
+      fontWeight: "600",
     },
     mobileMenuDivider: {
       height: 1,
@@ -317,7 +331,7 @@ const buildStyles = ({
       marginBottom: 8,
       backgroundColor: GOLD,
       borderRadius: 8,
-      alignItems: 'center',
+      alignItems: "center",
     },
   });
 

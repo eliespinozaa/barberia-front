@@ -1,4 +1,10 @@
-import React, { useState, useCallback, useMemo, useRef, useEffect } from 'react';
+import React, {
+  useState,
+  useCallback,
+  useMemo,
+  useRef,
+  useEffect,
+} from "react";
 import {
   View,
   Text,
@@ -7,28 +13,44 @@ import {
   Image,
   useWindowDimensions,
   Platform,
-} from 'react-native';
-import { SafeAreaView } from 'react-native-safe-area-context';
-import { Ionicons } from '@expo/vector-icons';
-import { useFocusEffect } from '@react-navigation/native';
-import { useTheme } from '../../context/ThemeContext';
-import createStyles from '../../styles/client/ClienteAgendarCitaStyles';
-import LoadingOverlay from '../../components/LoadingOverlay';
-import ResultModal from '../../components/ResultModal';
-import { tokenManager, clienteAPI, servicioAPI, barberoAPI, usuariosAPI, horarioAPI, citaAPI } from '../../config/api';
+} from "react-native";
+import { SafeAreaView } from "react-native-safe-area-context";
+import { Ionicons } from "@expo/vector-icons";
+import { useFocusEffect } from "@react-navigation/native";
+import { useTheme } from "../../context/ThemeContext";
+import createStyles from "../../styles/client/ClienteAgendarCitaStyles";
+import LoadingOverlay from "../../components/LoadingOverlay";
+import ResultModal from "../../components/ResultModal";
+import {
+  tokenManager,
+  clienteAPI,
+  servicioAPI,
+  barberoAPI,
+  usuariosAPI,
+  horarioAPI,
+  citaAPI,
+} from "../../config/api";
 
 const STEPS = [
-  { n: 1, label: 'Servicio' },
-  { n: 2, label: 'Barbero' },
-  { n: 3, label: 'Fecha' },
-  { n: 4, label: 'Hora' },
-  { n: 5, label: 'Confirmar' },
+  { n: 1, label: "Servicio" },
+  { n: 2, label: "Barbero" },
+  { n: 3, label: "Fecha" },
+  { n: 4, label: "Hora" },
+  { n: 5, label: "Confirmar" },
 ];
 
-const DIAS_SEMANA_LARGO = ['Domingo', 'Lunes', 'Martes', 'Miércoles', 'Jueves', 'Viernes', 'Sábado'];
+const DIAS_SEMANA_LARGO = [
+  "Domingo",
+  "Lunes",
+  "Martes",
+  "Miércoles",
+  "Jueves",
+  "Viernes",
+  "Sábado",
+];
 
 const formatearFechaLarga = (fechaObj) => {
-  if (!fechaObj) return '';
+  if (!fechaObj) return "";
   const fecha = new Date(fechaObj.anio, fechaObj.mes, fechaObj.dia);
   const dia = DIAS_SEMANA_LARGO[fecha.getDay()];
   return `${dia}, ${fechaObj.dia} de ${MESES[fechaObj.mes].toLowerCase()} de ${fechaObj.anio}`;
@@ -36,12 +58,21 @@ const formatearFechaLarga = (fechaObj) => {
 
 const num = (valor) => {
   if (valor == null) return 0;
-  if (typeof valor === 'number') return valor;
-  if (typeof valor === 'object' && 'parsedValue' in valor) return valor.parsedValue;
+  if (typeof valor === "number") return valor;
+  if (typeof valor === "object" && "parsedValue" in valor)
+    return valor.parsedValue;
   return Number(valor) || 0;
 };
 
-const DIAS_SEMANA_DB = ['DOMINGO', 'LUNES', 'MARTES', 'MIERCOLES', 'JUEVES', 'VIERNES', 'SABADO'];
+const DIAS_SEMANA_DB = [
+  "DOMINGO",
+  "LUNES",
+  "MARTES",
+  "MIERCOLES",
+  "JUEVES",
+  "VIERNES",
+  "SABADO",
+];
 
 const obtenerDiaSemanaDB = (fechaObj) => {
   const fecha = new Date(fechaObj.anio, fechaObj.mes, fechaObj.dia);
@@ -49,25 +80,35 @@ const obtenerDiaSemanaDB = (fechaObj) => {
 };
 
 const formatearFechaISO = (fechaObj) => {
-  const mm = String(fechaObj.mes + 1).padStart(2, '0');
-  const dd = String(fechaObj.dia).padStart(2, '0');
+  const mm = String(fechaObj.mes + 1).padStart(2, "0");
+  const dd = String(fechaObj.dia).padStart(2, "0");
   return `${fechaObj.anio}-${mm}-${dd}`;
 };
 
 const generarSlotsHora = (horaApertura, horaCierre) => {
-  const [hIni] = horaApertura.split(':').map(Number);
-  const [hFin] = horaCierre.split(':').map(Number);
+  const [hIni] = horaApertura.split(":").map(Number);
+  const [hFin] = horaCierre.split(":").map(Number);
   const slots = [];
   for (let h = hIni; h < hFin; h++) {
-    slots.push(`${String(h).padStart(2, '0')}:00`);
+    slots.push(`${String(h).padStart(2, "0")}:00`);
   }
   return slots;
 };
 
-const DIAS_SEMANA = ['D', 'L', 'M', 'M', 'J', 'V', 'S'];
+const DIAS_SEMANA = ["D", "L", "M", "M", "J", "V", "S"];
 const MESES = [
-  'Enero', 'Febrero', 'Marzo', 'Abril', 'Mayo', 'Junio',
-  'Julio', 'Agosto', 'Septiembre', 'Octubre', 'Noviembre', 'Diciembre',
+  "Enero",
+  "Febrero",
+  "Marzo",
+  "Abril",
+  "Mayo",
+  "Junio",
+  "Julio",
+  "Agosto",
+  "Septiembre",
+  "Octubre",
+  "Noviembre",
+  "Diciembre",
 ];
 
 const generarDiasDelMes = (mes, anio) => {
@@ -97,8 +138,8 @@ const esFechaPasada = (dia, mes, anio) => {
 const agruparPorCategoria = (servicios) => {
   const grupos = { CORTES: [], BARBA: [], OTROS: [] };
   servicios.forEach((s) => {
-    const nombre = (s.nombre || '').toLowerCase();
-    if (nombre.includes('barba') || nombre.includes('afeit')) {
+    const nombre = (s.nombre || "").toLowerCase();
+    if (nombre.includes("barba") || nombre.includes("afeit")) {
       grupos.BARBA.push(s);
     } else {
       grupos.CORTES.push(s);
@@ -109,9 +150,11 @@ const agruparPorCategoria = (servicios) => {
 
 const ClienteAgendarCitaScreen = ({ navigation, route }) => {
   const { width } = useWindowDimensions();
-  const { theme } = useTheme();
+  const { theme, toggleTheme } = useTheme();
   const styles = createStyles(width, theme);
-  const isWeb = Platform.OS === 'web';
+  const isWeb = Platform.OS === "web";
+
+  const [dropdownVisible, setDropdownVisible] = useState(false);
 
   const [cargando, setCargando] = useState(true);
   const [barberia, setBarberia] = useState(null);
@@ -122,9 +165,9 @@ const ClienteAgendarCitaScreen = ({ navigation, route }) => {
   // Modal de resultado (éxito / error), reemplaza al modal inline anterior
   const [resultado, setResultado] = useState({
     visible: false,
-    type: 'success',
-    title: '',
-    message: '',
+    type: "success",
+    title: "",
+    message: "",
   });
 
   const [horaSeleccionada, setHoraSeleccionada] = useState(null);
@@ -142,6 +185,12 @@ const ClienteAgendarCitaScreen = ({ navigation, route }) => {
   const [step, setStep] = useState(1);
   const [servicioSeleccionado, setServicioSeleccionado] = useState(null);
 
+  const handleLogout = async () => {
+    setDropdownVisible(false);
+    await tokenManager.clearAll();
+    navigation.replace("Home");
+  };
+
   const cargarDatos = useCallback(async () => {
     setCargando(true);
     const userActual = await tokenManager.getUser();
@@ -157,7 +206,9 @@ const ClienteAgendarCitaScreen = ({ navigation, route }) => {
     }
     setBarberia(resBarberia.data);
 
-    const resServicios = await servicioAPI.listarPorBarberia(resBarberia.data.id);
+    const resServicios = await servicioAPI.listarPorBarberia(
+      resBarberia.data.id,
+    );
     if (resServicios.success) {
       const normalizados = resServicios.data.map((s) => ({
         ...s,
@@ -174,11 +225,13 @@ const ClienteAgendarCitaScreen = ({ navigation, route }) => {
           return {
             ...b,
             nombre: resUsuario.success
-              ? (resUsuario.data.nombreCompleto || resUsuario.data.nombre || 'Barbero')
-              : 'Barbero',
+              ? resUsuario.data.nombreCompleto ||
+                resUsuario.data.nombre ||
+                "Barbero"
+              : "Barbero",
             imagen: resUsuario.success ? resUsuario.data.fotoPerfil : null,
           };
-        })
+        }),
       );
       setBarberos(barberosConNombre);
     }
@@ -197,10 +250,10 @@ const ClienteAgendarCitaScreen = ({ navigation, route }) => {
 
     const resHorario = await horarioAPI.listarPorBarberia(barberia.id);
     const horarioDelDia = resHorario.success
-  ? resHorario.data.find(
-      (h) => h.diaSemana?.toUpperCase() === diaSemana && h.estado === 1
-    )
-  : null;
+      ? resHorario.data.find(
+          (h) => h.diaSemana?.toUpperCase() === diaSemana && h.estado === 1,
+        )
+      : null;
 
     if (!horarioDelDia) {
       setHorariosDisponibles([]);
@@ -208,7 +261,10 @@ const ClienteAgendarCitaScreen = ({ navigation, route }) => {
       return;
     }
 
-    let slots = generarSlotsHora(horarioDelDia.horaApertura, horarioDelDia.horaCierre);
+    let slots = generarSlotsHora(
+      horarioDelDia.horaApertura,
+      horarioDelDia.horaCierre,
+    );
 
     // Si la fecha seleccionada es HOY, quitamos las horas que ya pasaron
     const ahora = new Date();
@@ -221,7 +277,7 @@ const ClienteAgendarCitaScreen = ({ navigation, route }) => {
       const horaActual = ahora.getHours();
       const minutoActual = ahora.getMinutes();
       slots = slots.filter((slot) => {
-        const [h, m] = slot.split(':').map(Number);
+        const [h, m] = slot.split(":").map(Number);
         return h > horaActual || (h === horaActual && m > minutoActual);
       });
     }
@@ -230,20 +286,33 @@ const ClienteAgendarCitaScreen = ({ navigation, route }) => {
     const ocupadas = new Set();
     if (resCitas.success) {
       resCitas.data
-        .filter((c) => c.idBarbero === barberoSeleccionado.id && c.estado !== 'CANCELADA')
+        .filter(
+          (c) =>
+            c.idBarbero === barberoSeleccionado.id && c.estado !== "CANCELADA",
+        )
         .forEach((c) => {
           const horaCorta = c.hora?.slice(0, 5);
           ocupadas.add(horaCorta);
         });
     }
 
-    setHorariosDisponibles(slots.map((hora) => ({ hora, ocupada: ocupadas.has(hora) })));
+    setHorariosDisponibles(
+      slots.map((hora) => ({ hora, ocupada: ocupadas.has(hora) })),
+    );
     setCargandoHorarios(false);
   }, [barberia, barberoSeleccionado, fechaSeleccionada]);
 
   const handleConfirmarCita = useCallback(async () => {
     const userActual = await tokenManager.getUser();
-    if (!userActual?.id || !barberia?.id || !barberoSeleccionado || !fechaSeleccionada || !horaSeleccionada || !servicioSeleccionado) return;
+    if (
+      !userActual?.id ||
+      !barberia?.id ||
+      !barberoSeleccionado ||
+      !fechaSeleccionada ||
+      !horaSeleccionada ||
+      !servicioSeleccionado
+    )
+      return;
 
     setConfirmando(true);
 
@@ -262,18 +331,19 @@ const ClienteAgendarCitaScreen = ({ navigation, route }) => {
     setConfirmando(false);
 
     if (res.success) {
-      const correo = userActual.correo || userActual.email || '';
+      const correo = userActual.correo || userActual.email || "";
       setResultado({
         visible: true,
-        type: 'success',
-        title: 'Cita agendada exitosamente',
+        type: "success",
+        title: "Cita agendada exitosamente",
         message:
           `Tu cita se agendó para el día ${formatearFechaLarga(fechaSeleccionada)} a las ${horaSeleccionada} horas.\n\n` +
-          `No olvides asistir a ${barberia?.direccion || 'la dirección de la barbería'}.` +
-          (correo ? `\n\nEl comprobante fue enviado a ${correo}.` : ''),
+          `No olvides asistir a ${barberia?.direccion || "la dirección de la barbería"}.` +
+          (correo ? `\n\nEl comprobante fue enviado a ${correo}.` : ""),
       });
     } else {
-      const esHorarioOcupado = res.status === 409 || res.error?.includes('ya no está disponible');
+      const esHorarioOcupado =
+        res.status === 409 || res.error?.includes("ya no está disponible");
 
       if (esHorarioOcupado) {
         setStep(4);
@@ -282,22 +352,29 @@ const ClienteAgendarCitaScreen = ({ navigation, route }) => {
 
       setResultado({
         visible: true,
-        type: 'error',
-        title: esHorarioOcupado ? 'Horario no disponible' : 'Algo salió mal',
+        type: "error",
+        title: esHorarioOcupado ? "Horario no disponible" : "Algo salió mal",
         message: esHorarioOcupado
-          ? 'Ese horario ya fue tomado por otro cliente. Elige otra hora disponible.'
-          : 'No se pudo agendar tu cita. Intenta de nuevo.',
+          ? "Ese horario ya fue tomado por otro cliente. Elige otra hora disponible."
+          : "No se pudo agendar tu cita. Intenta de nuevo.",
       });
 
-      console.warn('No se pudo agendar:', res.error);
+      console.warn("No se pudo agendar:", res.error);
     }
-  }, [barberia, barberoSeleccionado, fechaSeleccionada, horaSeleccionada, servicioSeleccionado, cargarHorariosDisponibles]);
+  }, [
+    barberia,
+    barberoSeleccionado,
+    fechaSeleccionada,
+    horaSeleccionada,
+    servicioSeleccionado,
+    cargarHorariosDisponibles,
+  ]);
 
   const handleCerrarResultado = () => {
-    const fueExito = resultado.type === 'success';
-    setResultado({ visible: false, type: 'success', title: '', message: '' });
+    const fueExito = resultado.type === "success";
+    setResultado({ visible: false, type: "success", title: "", message: "" });
     if (fueExito) {
-      navigation.navigate('ClientHomeScreen');
+      navigation.navigate("ClientHomeScreen");
     }
   };
 
@@ -308,17 +385,21 @@ const ClienteAgendarCitaScreen = ({ navigation, route }) => {
   useFocusEffect(
     useCallback(() => {
       cargarDatos();
-    }, [cargarDatos])
+    }, [cargarDatos]),
   );
 
   const categorias = useMemo(() => agruparPorCategoria(servicios), [servicios]);
 
   const puedeAvanzar =
-    step === 1 ? !!servicioSeleccionado :
-    step === 2 ? !!barberoSeleccionado :
-    step === 3 ? !!fechaSeleccionada :
-    step === 4 ? !!horaSeleccionada :
-    true;
+    step === 1
+      ? !!servicioSeleccionado
+      : step === 2
+        ? !!barberoSeleccionado
+        : step === 3
+          ? !!fechaSeleccionada
+          : step === 4
+            ? !!horaSeleccionada
+            : true;
 
   const handleMesAnterior = () => {
     if (mesActual === 0) {
@@ -353,31 +434,23 @@ const ClienteAgendarCitaScreen = ({ navigation, route }) => {
   };
 
   return (
-    <SafeAreaView style={styles.container} edges={['top', 'bottom', 'left', 'right']}>
+    <SafeAreaView
+      style={styles.container}
+      edges={["top", "bottom", "left", "right"]}
+    >
       <LoadingOverlay visible={cargando} message="Cargando servicios..." />
       <LoadingOverlay visible={confirmando} message="Agendando tu cita..." />
 
-      {/* ── Navbar ── */}
-      <View style={styles.navbar}>
-        <View style={styles.navLeft}>
-          <View style={styles.navLogoWrap}>
-            {barberia?.imagen ? (
-              <Image source={{ uri: barberia.imagen }} style={styles.navLogoImg} />
-            ) : (
-              <Ionicons name="cut" size={18} color="#C9A84C" />
-            )}
-          </View>
-          <Text style={styles.navBarberia}>{barberia?.nombre || 'Mi Barbería'}</Text>
-        </View>
-        <TouchableOpacity style={styles.navAvatar}>
-          <Ionicons name="person-outline" size={20} color="#FFFFFF" />
-        </TouchableOpacity>
-      </View>
+    
 
       {/* ── Título + back ── */}
       <View style={styles.titleBar}>
         <TouchableOpacity style={styles.backBtn} onPress={handleAtras}>
-          <Ionicons name="arrow-back" size={20} color={theme.mode === 'dark' ? '#FFFFFF' : '#1A1A1A'} />
+          <Ionicons
+            name="arrow-back"
+            size={20}
+            color={theme.mode === "dark" ? "#FFFFFF" : "#1A1A1A"}
+          />
         </TouchableOpacity>
         <View style={styles.titlePill}>
           <Text style={styles.titlePillText}>Agendar cita</Text>
@@ -390,7 +463,6 @@ const ClienteAgendarCitaScreen = ({ navigation, route }) => {
         showsVerticalScrollIndicator={false}
       >
         <View style={styles.contentWrap}>
-
           {/* ── Stepper ── */}
           <View style={styles.stepperRow}>
             {STEPS.map((s, idx) => {
@@ -416,12 +488,19 @@ const ClienteAgendarCitaScreen = ({ navigation, route }) => {
                         {s.n}
                       </Text>
                     </View>
-                    <Text style={[styles.stepLabel, (isActive || isDone) && styles.stepLabelActive]}>
+                    <Text
+                      style={[
+                        styles.stepLabel,
+                        (isActive || isDone) && styles.stepLabelActive,
+                      ]}
+                    >
                       {s.label}
                     </Text>
                   </View>
                   {idx < STEPS.length - 1 && (
-                    <View style={[styles.stepLine, isDone && styles.stepLineDone]} />
+                    <View
+                      style={[styles.stepLine, isDone && styles.stepLineDone]}
+                    />
                   )}
                 </React.Fragment>
               );
@@ -436,9 +515,15 @@ const ClienteAgendarCitaScreen = ({ navigation, route }) => {
                   <Ionicons
                     name="cut-outline"
                     size={36}
-                    color={theme.mode === 'dark' ? 'rgba(255,255,255,0.3)' : 'rgba(0,0,0,0.25)'}
+                    color={
+                      theme.mode === "dark"
+                        ? "rgba(255,255,255,0.3)"
+                        : "rgba(0,0,0,0.25)"
+                    }
                   />
-                  <Text style={styles.emptyText}>No hay servicios disponibles</Text>
+                  <Text style={styles.emptyText}>
+                    No hay servicios disponibles
+                  </Text>
                 </View>
               ) : (
                 categorias.map(([nombreCategoria, items]) => (
@@ -466,9 +551,15 @@ const ClienteAgendarCitaScreen = ({ navigation, route }) => {
                   <Ionicons
                     name="person-outline"
                     size={36}
-                    color={theme.mode === 'dark' ? 'rgba(255,255,255,0.3)' : 'rgba(0,0,0,0.25)'}
+                    color={
+                      theme.mode === "dark"
+                        ? "rgba(255,255,255,0.3)"
+                        : "rgba(0,0,0,0.25)"
+                    }
                   />
-                  <Text style={styles.emptyText}>No hay barberos disponibles</Text>
+                  <Text style={styles.emptyText}>
+                    No hay barberos disponibles
+                  </Text>
                 </View>
               ) : (
                 <View style={styles.barberosRow}>
@@ -477,29 +568,51 @@ const ClienteAgendarCitaScreen = ({ navigation, route }) => {
                     return (
                       <TouchableOpacity
                         key={b.id}
-                        style={[styles.barberoCard, isSel && styles.barberoCardSeleccionado]}
+                        style={[
+                          styles.barberoCard,
+                          isSel && styles.barberoCardSeleccionado,
+                        ]}
                         onPress={() => setBarberoSeleccionado(b)}
                         activeOpacity={0.85}
                       >
                         {isSel && (
                           <View style={styles.barberoCheckBadge}>
-                            <Ionicons name="checkmark" size={13} color="#FFFFFF" />
+                            <Ionicons
+                              name="checkmark"
+                              size={13}
+                              color="#FFFFFF"
+                            />
                           </View>
                         )}
 
                         <View style={styles.barberoAvatarWrap}>
                           {b.imagen ? (
-                            <Image source={{ uri: b.imagen }} style={styles.barberoAvatarImg} />
+                            <Image
+                              source={{ uri: b.imagen }}
+                              style={styles.barberoAvatarImg}
+                            />
                           ) : (
                             <Ionicons name="person" size={22} color="#9CA3AF" />
                           )}
                         </View>
 
-                        <Text style={styles.barberoNombre} numberOfLines={2}>{b.nombre}</Text>
+                        <Text style={styles.barberoNombre} numberOfLines={2}>
+                          {b.nombre}
+                        </Text>
 
-                        <View style={[styles.barberoBtn, isSel && styles.barberoBtnSeleccionado]}>
-                          <Text style={[styles.barberoBtnText, isSel && styles.barberoBtnTextSeleccionado]}>
-                            {isSel ? 'Seleccionado' : 'Seleccionar'}
+                        <View
+                          style={[
+                            styles.barberoBtn,
+                            isSel && styles.barberoBtnSeleccionado,
+                          ]}
+                        >
+                          <Text
+                            style={[
+                              styles.barberoBtnText,
+                              isSel && styles.barberoBtnTextSeleccionado,
+                            ]}
+                          >
+                            {isSel ? "Seleccionado" : "Seleccionar"}
                           </Text>
                         </View>
                       </TouchableOpacity>
@@ -538,9 +651,15 @@ const ClienteAgendarCitaScreen = ({ navigation, route }) => {
                   <Ionicons
                     name="time-outline"
                     size={36}
-                    color={theme.mode === 'dark' ? 'rgba(255,255,255,0.3)' : 'rgba(0,0,0,0.25)'}
+                    color={
+                      theme.mode === "dark"
+                        ? "rgba(255,255,255,0.3)"
+                        : "rgba(0,0,0,0.25)"
+                    }
                   />
-                  <Text style={styles.emptyText}>No hay horarios disponibles ese día</Text>
+                  <Text style={styles.emptyText}>
+                    No hay horarios disponibles ese día
+                  </Text>
                 </View>
               ) : (
                 <View style={styles.horariosGrid}>
@@ -557,7 +676,12 @@ const ClienteAgendarCitaScreen = ({ navigation, route }) => {
                         disabled={ocupada}
                         onPress={() => setHoraSeleccionada(hora)}
                       >
-                        <Text style={[styles.horaSlotTexto, isSel && styles.horaSlotTextoSeleccionada]}>
+                        <Text
+                          style={[
+                            styles.horaSlotTexto,
+                            isSel && styles.horaSlotTextoSeleccionada,
+                          ]}
+                        >
                           {hora}
                         </Text>
                       </TouchableOpacity>
@@ -575,7 +699,9 @@ const ClienteAgendarCitaScreen = ({ navigation, route }) => {
 
               <View style={styles.confirmarFila}>
                 <Text style={styles.confirmarLabel}>Fecha</Text>
-                <Text style={styles.confirmarValor}>{formatearFechaLarga(fechaSeleccionada)}</Text>
+                <Text style={styles.confirmarValor}>
+                  {formatearFechaLarga(fechaSeleccionada)}
+                </Text>
               </View>
 
               <View style={styles.confirmarFila}>
@@ -585,15 +711,27 @@ const ClienteAgendarCitaScreen = ({ navigation, route }) => {
 
               <View style={styles.confirmarFila}>
                 <Text style={styles.confirmarLabel}>Servicio</Text>
-                <View style={{ flexDirection: 'row', alignItems: 'center', gap: 14 }}>
-                  <Text style={styles.confirmarValorMuted}>{servicioSeleccionado?.nombre}</Text>
-                  <Text style={styles.confirmarValorFuerte}>${servicioSeleccionado?.precio}</Text>
+                <View
+                  style={{
+                    flexDirection: "row",
+                    alignItems: "center",
+                    gap: 14,
+                  }}
+                >
+                  <Text style={styles.confirmarValorMuted}>
+                    {servicioSeleccionado?.nombre}
+                  </Text>
+                  <Text style={styles.confirmarValorFuerte}>
+                    ${servicioSeleccionado?.precio}
+                  </Text>
                 </View>
               </View>
 
               <View style={styles.confirmarFila}>
                 <Text style={styles.confirmarLabel}>Barbero</Text>
-                <Text style={styles.confirmarValor}>{barberoSeleccionado?.nombre}</Text>
+                <Text style={styles.confirmarValor}>
+                  {barberoSeleccionado?.nombre}
+                </Text>
               </View>
 
               <View style={styles.confirmarFila}>
@@ -603,8 +741,13 @@ const ClienteAgendarCitaScreen = ({ navigation, route }) => {
 
               <View style={[styles.confirmarFila, { borderBottomWidth: 0 }]}>
                 <Text style={styles.confirmarLabel}>Ubicación</Text>
-                <Text style={[styles.confirmarValor, { textAlign: 'right', flexShrink: 1 }]}>
-                  {barberia?.direccion || 'Dirección no disponible'}
+                <Text
+                  style={[
+                    styles.confirmarValor,
+                    { textAlign: "right", flexShrink: 1 },
+                  ]}
+                >
+                  {barberia?.direccion || "Dirección no disponible"}
                 </Text>
               </View>
             </View>
@@ -613,11 +756,20 @@ const ClienteAgendarCitaScreen = ({ navigation, route }) => {
           {/* ── Pasos futuros (placeholder) ── */}
           {step > 5 && (
             <View style={styles.emptyState}>
-              <Ionicons name="construct-outline" size={36} color={theme.mode === 'dark' ? 'rgba(255,255,255,0.3)' : 'rgba(0,0,0,0.25)'} />
-              <Text style={styles.emptyText}>Paso "{STEPS[step - 1].label}" próximamente</Text>
+              <Ionicons
+                name="construct-outline"
+                size={36}
+                color={
+                  theme.mode === "dark"
+                    ? "rgba(255,255,255,0.3)"
+                    : "rgba(0,0,0,0.25)"
+                }
+              />
+              <Text style={styles.emptyText}>
+                Paso "{STEPS[step - 1].label}" próximamente
+              </Text>
             </View>
           )}
-
         </View>
       </ScrollView>
 
@@ -641,18 +793,34 @@ const ClienteAgendarCitaScreen = ({ navigation, route }) => {
   );
 };
 
-const Calendario = ({ mes, anio, fechaSeleccionada, onSeleccionarFecha, onMesAnterior, onMesSiguiente, styles }) => {
+const Calendario = ({
+  mes,
+  anio,
+  fechaSeleccionada,
+  onSeleccionarFecha,
+  onMesAnterior,
+  onMesSiguiente,
+  styles,
+}) => {
   const filas = generarDiasDelMes(mes, anio);
 
   return (
     <View style={styles.calendarioCard}>
       <View style={styles.calendarioHeader}>
-        <Text style={styles.calendarioMesTexto}>{MESES[mes]} de {anio}</Text>
-        <View style={{ flexDirection: 'row', gap: 6 }}>
-          <TouchableOpacity style={styles.calendarioNavBtn} onPress={onMesAnterior}>
+        <Text style={styles.calendarioMesTexto}>
+          {MESES[mes]} de {anio}
+        </Text>
+        <View style={{ flexDirection: "row", gap: 6 }}>
+          <TouchableOpacity
+            style={styles.calendarioNavBtn}
+            onPress={onMesAnterior}
+          >
             <Ionicons name="chevron-back" size={18} color="#1A1A1A" />
           </TouchableOpacity>
-          <TouchableOpacity style={styles.calendarioNavBtn} onPress={onMesSiguiente}>
+          <TouchableOpacity
+            style={styles.calendarioNavBtn}
+            onPress={onMesSiguiente}
+          >
             <Ionicons name="chevron-forward" size={18} color="#1A1A1A" />
           </TouchableOpacity>
         </View>
@@ -686,8 +854,18 @@ const Calendario = ({ mes, anio, fechaSeleccionada, onSeleccionarFecha, onMesAnt
                   disabled={deshabilitado}
                   onPress={() => onSeleccionarFecha({ dia, mes, anio })}
                 >
-                  <View style={[styles.calendarioDiaCirculo, isSel && styles.calendarioDiaCirculoSeleccionado]}>
-                    <Text style={[styles.calendarioDiaTexto, deshabilitado && styles.calendarioDiaTextoDeshabilitado]}>
+                  <View
+                    style={[
+                      styles.calendarioDiaCirculo,
+                      isSel && styles.calendarioDiaCirculoSeleccionado,
+                    ]}
+                  >
+                    <Text
+                      style={[
+                        styles.calendarioDiaTexto,
+                        deshabilitado && styles.calendarioDiaTextoDeshabilitado,
+                      ]}
+                    >
                       {dia}
                     </Text>
                   </View>
@@ -702,7 +880,14 @@ const Calendario = ({ mes, anio, fechaSeleccionada, onSeleccionarFecha, onMesAnt
 };
 
 // ── Sub-componente: carrusel de una categoría (con flechas en web) ──
-const CategoriaServicios = ({ titulo, items, seleccionado, onSeleccionar, styles, isWeb }) => {
+const CategoriaServicios = ({
+  titulo,
+  items,
+  seleccionado,
+  onSeleccionar,
+  styles,
+  isWeb,
+}) => {
   const scrollRef = useRef(null);
   const [scrollX, setScrollX] = useState(0);
   const [carouselWidth, setCarouselWidth] = useState(0);
@@ -720,15 +905,20 @@ const CategoriaServicios = ({ titulo, items, seleccionado, onSeleccionar, styles
     scrollRef.current?.scrollTo({ x: nuevo, animated: true });
   };
 
-  const emoji = titulo === 'BARBA' ? '🧔' : titulo === 'CORTES' ? '✂️' : '';
+  const emoji = titulo === "BARBA" ? "🧔" : titulo === "CORTES" ? "✂️" : "";
 
   return (
     <View style={styles.categoriaSection}>
-      <Text style={styles.categoriaTitulo}>{titulo} {emoji}</Text>
+      <Text style={styles.categoriaTitulo}>
+        {titulo} {emoji}
+      </Text>
 
       <View style={styles.carouselWrapper}>
         {isWeb && scrollX > 0 && (
-          <TouchableOpacity style={[styles.carouselArrow, styles.carouselArrowLeft]} onPress={handleScrollLeft}>
+          <TouchableOpacity
+            style={[styles.carouselArrow, styles.carouselArrowLeft]}
+            onPress={handleScrollLeft}
+          >
             <Ionicons name="chevron-back" size={20} color="#1A1A1A" />
           </TouchableOpacity>
         )}
@@ -748,7 +938,10 @@ const CategoriaServicios = ({ titulo, items, seleccionado, onSeleccionar, styles
             return (
               <TouchableOpacity
                 key={s.id}
-                style={[styles.servicioCard, isSel && styles.servicioCardSeleccionado]}
+                style={[
+                  styles.servicioCard,
+                  isSel && styles.servicioCardSeleccionado,
+                ]}
                 onPress={() => onSeleccionar(s)}
                 activeOpacity={0.85}
               >
@@ -760,18 +953,33 @@ const CategoriaServicios = ({ titulo, items, seleccionado, onSeleccionar, styles
 
                 <View style={styles.servicioImgWrap}>
                   {s.imagen ? (
-                    <Image source={{ uri: s.imagen }} style={styles.servicioImg} />
+                    <Image
+                      source={{ uri: s.imagen }}
+                      style={styles.servicioImg}
+                    />
                   ) : (
                     <Ionicons name="cut-outline" size={22} color="#9CA3AF" />
                   )}
                 </View>
 
-                <Text style={styles.servicioNombre} numberOfLines={1}>{s.nombre}</Text>
+                <Text style={styles.servicioNombre} numberOfLines={1}>
+                  {s.nombre}
+                </Text>
                 <Text style={styles.servicioPrecio}>${s.precio}</Text>
 
-                <View style={[styles.servicioBtn, isSel && styles.servicioBtnSeleccionado]}>
-                  <Text style={[styles.servicioBtnText, isSel && styles.servicioBtnTextSeleccionado]}>
-                    {isSel ? 'Seleccionado' : 'Seleccionar'}
+                <View
+                  style={[
+                    styles.servicioBtn,
+                    isSel && styles.servicioBtnSeleccionado,
+                  ]}
+                >
+                  <Text
+                    style={[
+                      styles.servicioBtnText,
+                      isSel && styles.servicioBtnTextSeleccionado,
+                    ]}
+                  >
+                    {isSel ? "Seleccionado" : "Seleccionar"}
                   </Text>
                 </View>
               </TouchableOpacity>
@@ -780,7 +988,10 @@ const CategoriaServicios = ({ titulo, items, seleccionado, onSeleccionar, styles
         </ScrollView>
 
         {isWeb && scrollX < scrollMax && (
-          <TouchableOpacity style={[styles.carouselArrow, styles.carouselArrowRight]} onPress={handleScrollRight}>
+          <TouchableOpacity
+            style={[styles.carouselArrow, styles.carouselArrowRight]}
+            onPress={handleScrollRight}
+          >
             <Ionicons name="chevron-forward" size={20} color="#1A1A1A" />
           </TouchableOpacity>
         )}

@@ -1,4 +1,4 @@
-import React, { useRef, useEffect } from "react";
+import React, { useRef, useEffect, useState } from "react";
 import {
   View,
   Text,
@@ -8,10 +8,16 @@ import {
   Linking,
   Platform,
   useWindowDimensions,
+  Image,
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { Ionicons } from "@expo/vector-icons";
-import { tokenManager } from "../../config/api";
+import {
+  tokenManager,
+  barberiaAPI,
+  resenaAPI,
+  servicioAPI,
+} from "../../config/api";
 import SharedNavbar from "../../components/SharedNavbar";
 import createStyles from "../../styles/common/BarberStyles";
 import { useTheme } from "../../context/ThemeContext";
@@ -64,25 +70,56 @@ const SERVICES = [
 const STEPS = [
   {
     number: "01",
-    title: "Encuentra tu barbería",
-    desc: "Busca entre cientos de barberías verificadas cerca de ti.",
+    title: "Elige tu servicio",
+    desc: "Corte, barba o combo — selecciona el servicio que necesitas.",
   },
   {
     number: "02",
-    title: "Elige tu servicio",
-    desc: "Selecciona el corte, barbero y horario que mejor te convenga.",
+    title: "Elige tu barbero",
+    desc: "Escoge al barbero de tu preferencia dentro de la barbería.",
   },
   {
     number: "03",
-    title: "Confirma tu cita",
-    desc: "Recibe confirmación al instante y recordatorio antes de tu cita.",
+    title: "Selecciona fecha y hora",
+    desc: "Consulta la disponibilidad real y elige el horario que te convenga.",
   },
   {
     number: "04",
-    title: "¡Disfruta el resultado!",
-    desc: "Llega, relájate y sal con el mejor look de tu vida.",
+    title: "Confirma tu cita",
+    desc: "Revisa los datos y confirma. Recibirás el comprobante al instante.",
   },
 ];
+
+const normalizarPrecio = (valor) => {
+  if (valor == null) return 0;
+  if (typeof valor === "number") return valor;
+  if (typeof valor === "object" && "parsedValue" in valor)
+    return valor.parsedValue;
+  return Number(valor) || 0;
+};
+
+const construirUriImagen = (base64) => {
+  if (!base64) return null;
+  if (base64.startsWith("data:")) return base64;
+  return `data:image/jpeg;base64,${base64}`;
+};
+
+const iconoPorNombre = (nombre = "") => {
+  const n = nombre.toLowerCase();
+  if (n.includes("barba") || n.includes("afeit") || n.includes("rasur"))
+    return "brush-outline";
+  if (n.includes("combo") || n.includes("premium")) return "sparkles-outline";
+  if (n.includes("color") || n.includes("mecha") || n.includes("tinte"))
+    return "color-palette-outline";
+  if (
+    n.includes("tratamiento") ||
+    n.includes("hidrat") ||
+    n.includes("keratina")
+  )
+    return "water-outline";
+  if (n.includes("fade") || n.includes("degrad")) return "happy-outline";
+  return "cut-outline";
+};
 
 const MOCK_SHOPS = [
   {
@@ -168,7 +205,89 @@ const HomeScreen = ({ navigation }) => {
   const slideAnim = useRef(new Animated.Value(40)).current;
   const scaleAnim = useRef(new Animated.Value(0.96)).current;
 
+  const [shops, setShops] = useState([]);
+  const [loadingShops, setLoadingShops] = useState(true);
+
+  const [services, setServices] = useState([]);
+  const [loadingServices, setLoadingServices] = useState(true);
+
   const nativeDrv = Platform.OS !== "web";
+
+  useEffect(() => {
+    const cargarHomeData = async () => {
+      setLoadingShops(true);
+      setLoadingServices(true);
+
+      const res = await barberiaAPI.listar();
+
+      if (res?.success && Array.isArray(res.data)) {
+        const activas = res.data.filter(
+          (b) => b.estado !== false && b.estado !== 0,
+        );
+        const destacadas = activas.slice(0, 3);
+
+        // ── Barberías + reseñas (igual que antes) ──
+        const conResumen = await Promise.all(
+          destacadas.map(async (shop) => {
+            const resResumen = await resenaAPI.resumen(shop.idBarberia);
+            return {
+              ...shop,
+              id: shop.idBarberia,
+              rating: resResumen?.success ? resResumen.data?.promedio : null,
+              totalResenas: resResumen?.success
+                ? resResumen.data?.totalResenas
+                : 0,
+            };
+          }),
+        );
+        setShops(conResumen);
+        setLoadingShops(false);
+
+        // ── Servicios reales de esas mismas barberías ──
+        const resultadosServicios = await Promise.all(
+          destacadas.map((shop) =>
+            servicioAPI.listarPorBarberia(shop.idBarberia),
+          ),
+        );
+
+        const mapaServicios = new Map();
+        resultadosServicios.forEach((resServ) => {
+          if (resServ?.success && Array.isArray(resServ.data)) {
+            resServ.data.forEach((s) => {
+              const clave = (s.nombre || "").trim().toLowerCase();
+              if (!clave) return;
+              if (mapaServicios.has(clave)) {
+                mapaServicios.get(clave).count += 1;
+              } else {
+                mapaServicios.set(clave, {
+                  nombre: s.nombre,
+                  precio: normalizarPrecio(s.precio),
+                  icon: iconoPorNombre(s.nombre),
+                  imagen: s.imagen || null,
+                  count: 1,
+                });
+              }
+            });
+          }
+        });
+
+        const listaServicios = Array.from(mapaServicios.values())
+          .sort((a, b) => b.count - a.count)
+          .slice(0, 6)
+          .map((s) => ({ ...s, hot: s.count > 1 }));
+
+        setServices(listaServicios);
+        setLoadingServices(false);
+      } else {
+        setShops([]);
+        setLoadingShops(false);
+        setServices([]);
+        setLoadingServices(false);
+      }
+    };
+
+    cargarHomeData();
+  }, []);
 
   useEffect(() => {
     const checkAuth = async () => {
@@ -229,7 +348,10 @@ const HomeScreen = ({ navigation }) => {
     );
 
   return (
-    <SafeAreaView style={styles.container} edges={["top", "bottom", "left", "right"]}>
+    <SafeAreaView
+      style={styles.container}
+      edges={["top", "bottom", "left", "right"]}
+    >
       <SharedNavbar navigation={navigation} currentScreen="Home" />
 
       <ScrollView
@@ -242,7 +364,11 @@ const HomeScreen = ({ navigation }) => {
           <View style={styles.heroOverlay} />
           <View style={styles.heroContent}>
             <View style={styles.heroBadge}>
-              <Ionicons name="cut" size={12} color="#C9A84C" />
+              <Image
+                source={require("../../assets/Logo.png")}
+                style={styles.heroBadgeLogo}
+                resizeMode="contain"
+              />
               <Text style={styles.heroBadgeText}>
                 La plataforma #1 para barberías
               </Text>
@@ -257,14 +383,6 @@ const HomeScreen = ({ navigation }) => {
             </Text>
             <View style={styles.heroButtons}>
               <TouchableOpacity
-                style={styles.heroBtnPrimary}
-                onPress={() => navigation.navigate("Register")}
-                activeOpacity={0.85}
-              >
-                <Text style={styles.heroBtnPrimaryText}>Reservar cita</Text>
-                <Ionicons name="arrow-forward" size={18} color="#1A1A1A" />
-              </TouchableOpacity>
-              <TouchableOpacity
                 style={styles.heroBtnSecondary}
                 onPress={() => navigation.navigate("Barberias")}
                 activeOpacity={0.85}
@@ -276,27 +394,6 @@ const HomeScreen = ({ navigation }) => {
           </View>
         </Animated.View>
 
-        {/* ── Stats strip ───────────────────────────────────────────────── */}
-        <Animated.View style={[styles.statsStrip, animStyle]}>
-          {[
-            { n: "500+", l: "Barberías" },
-            { n: "12K+", l: "Clientes" },
-            { n: "98%", l: "Satisfacción" },
-            { n: "50K+", l: "Citas agendadas" },
-          ].map((s, i) => (
-            <View
-              key={i}
-              style={[
-                styles.statItem,
-                i < 3 && !isSmallScreen && styles.statItemBorder,
-              ]}
-            >
-              <Text style={styles.statNumber}>{s.n}</Text>
-              <Text style={styles.statLabel}>{s.l}</Text>
-            </View>
-          ))}
-        </Animated.View>
-
         <Animated.View style={[styles.section, animStyle]}>
           <View style={styles.sectionEyebrow}>
             <View style={styles.sectionEyebrowLine} />
@@ -304,33 +401,62 @@ const HomeScreen = ({ navigation }) => {
           </View>
           <Text style={styles.sectionTitle}>Servicios populares</Text>
           <Text style={styles.sectionSubtitle}>
-            Desde cortes clásicos hasta tratamientos premium — todo en un solo
-            lugar.
+            Servicios reales que ofrecen nuestras barberías registradas.
           </Text>
-          <View style={styles.servicesGrid}>
-            {SERVICES.map((svc, i) => (
-              <View
-                key={i}
-                style={[styles.serviceCard, svc.hot && styles.serviceCardHot]}
-              >
-                {svc.hot && (
-                  <View style={styles.serviceHotBadge}>
-                    <Text style={styles.serviceHotBadgeText}>🔥 Popular</Text>
+
+          {loadingServices ? (
+            <Text
+              style={{
+                color: theme.colors.textMuted,
+                textAlign: "center",
+                marginTop: 20,
+              }}
+            >
+              Cargando servicios...
+            </Text>
+          ) : services.length === 0 ? (
+            <Text
+              style={{
+                color: theme.colors.textMuted,
+                textAlign: "center",
+                marginTop: 20,
+              }}
+            >
+              Aún no hay servicios registrados.
+            </Text>
+          ) : (
+            <View style={styles.servicesGrid}>
+              {services.map((svc, i) => (
+                <View
+                  key={i}
+                  style={[styles.serviceCard, svc.hot && styles.serviceCardHot]}
+                >
+                  {svc.hot && (
+                    <View style={styles.serviceHotBadge}>
+                      <Text style={styles.serviceHotBadgeText}>🔥 Popular</Text>
+                    </View>
+                  )}
+                  <View style={styles.serviceIconCircle}>
+                    {svc.imagen ? (
+                      <Image
+                        source={{ uri: construirUriImagen(svc.imagen) }}
+                        style={styles.serviceImageInner}
+                        resizeMode="cover"
+                      />
+                    ) : (
+                      <Ionicons name={svc.icon} size={24} color="#C9A84C" />
+                    )}
                   </View>
-                )}
-                <View style={styles.serviceIconCircle}>
-                  <Ionicons name={svc.icon} size={24} color="#C9A84C" />
+                  <Text style={styles.serviceTitle}>{svc.nombre}</Text>
+                  <View style={styles.servicePrice}>
+                    <Text style={styles.servicePriceFrom}>desde</Text>
+                    <Text style={styles.servicePriceValue}>${svc.precio}</Text>
+                    <Text style={styles.servicePriceCurrency}>MXN</Text>
+                  </View>
                 </View>
-                <Text style={styles.serviceTitle}>{svc.title}</Text>
-                <Text style={styles.serviceDesc}>{svc.desc}</Text>
-                <View style={styles.servicePrice}>
-                  <Text style={styles.servicePriceFrom}>desde</Text>
-                  <Text style={styles.servicePriceValue}>${svc.price}</Text>
-                  <Text style={styles.servicePriceCurrency}>MXN</Text>
-                </View>
-              </View>
-            ))}
-          </View>
+              ))}
+            </View>
+          )}
         </Animated.View>
 
         <View style={styles.sectionAlt}>
@@ -370,90 +496,107 @@ const HomeScreen = ({ navigation }) => {
           <Text style={styles.sectionSubtitle}>
             Negocios verificados con los mejores ratings de la comunidad.
           </Text>
-          <View style={styles.shopsGrid}>
-            {MOCK_SHOPS.map((shop) => (
-              <View key={shop.id} style={styles.shopCard}>
-                <View style={styles.shopCardImage}>
-                  <View style={styles.shopCardImageInner}>
-                    <Ionicons
-                      name="cut"
-                      size={40}
-                      color="#C9A84C"
-                      style={{ opacity: 0.6 }}
-                    />
+
+          {loadingShops ? (
+            <Text
+              style={{
+                color: theme.colors.textMuted,
+                textAlign: "center",
+                marginTop: 20,
+              }}
+            >
+              Cargando barberías...
+            </Text>
+          ) : shops.length === 0 ? (
+            <Text
+              style={{
+                color: theme.colors.textMuted,
+                textAlign: "center",
+                marginTop: 20,
+              }}
+            >
+              Aún no hay barberías registradas.
+            </Text>
+          ) : (
+            <View style={styles.shopsGrid}>
+              {shops.map((shop) => (
+                <View key={shop.id} style={styles.shopCard}>
+                  <View style={styles.shopCardImage}>
+                    {shop.imagen ? (
+                      <Image
+                        source={{ uri: shop.imagen }}
+                        style={styles.shopCardImageInner}
+                        resizeMode="cover"
+                      />
+                    ) : (
+                      <View style={styles.shopCardImageInner}>
+                        <Ionicons
+                          name="cut"
+                          size={40}
+                          color="#C9A84C"
+                          style={{ opacity: 0.6 }}
+                        />
+                      </View>
+                    )}
                   </View>
-                </View>
-                <View style={styles.shopCardBody}>
-                  <View style={styles.shopCardHeader}>
-                    <Text style={styles.shopCardName}>{shop.name}</Text>
-                    <View style={styles.shopCardRating}>
-                      <Ionicons name="star" size={12} color="#C9A84C" />
-                      <Text style={styles.shopCardRatingText}>
-                        {shop.rating}
+                  <View style={styles.shopCardBody}>
+                    <View style={styles.shopCardHeader}>
+                      <Text style={styles.shopCardName}>{shop.nombre}</Text>
+                      {shop.rating != null && (
+                        <View style={styles.shopCardRating}>
+                          <Ionicons name="star" size={12} color="#C9A84C" />
+                          <Text style={styles.shopCardRatingText}>
+                            {Number(shop.rating).toFixed(1)}
+                          </Text>
+                        </View>
+                      )}
+                    </View>
+                    <View style={styles.shopCardAddressRow}>
+                      <Ionicons
+                        name="location-outline"
+                        size={12}
+                        color={theme.colors.textMuted}
+                      />
+                      <Text style={styles.shopCardAddress}>
+                        {shop.direccion || "Dirección no disponible"}
                       </Text>
                     </View>
-                  </View>
-                  <View style={styles.shopCardAddressRow}>
-                    <Ionicons
-                      name="location-outline"
-                      size={12}
-                      color={theme.colors.textMuted}
-                    />
-                    <Text style={styles.shopCardAddress}>{shop.address}</Text>
-                  </View>
-                  <View style={styles.shopCardMeta}>
-                    <Text style={styles.shopCardSpecialty}>
-                      ✦ {shop.specialty}
-                    </Text>
-                    <Text style={styles.shopCardReviews}>
-                      {shop.reviews} reseñas
-                    </Text>
-                  </View>
-                  <View style={styles.shopCardFooter}>
-                    <View style={styles.shopCardTag}>
-                      <Text style={styles.shopCardTagText}>{shop.tag}</Text>
-                    </View>
-                    <TouchableOpacity
-                      style={styles.shopCardBtn}
-                      onPress={() => navigation.navigate("Login")}
-                      activeOpacity={0.85}
-                    >
-                      <Text style={styles.shopCardBtnText}>Reservar</Text>
-                      <Ionicons
-                        name="arrow-forward"
-                        size={14}
-                        color="#1A1A1A"
-                      />
-                    </TouchableOpacity>
+                    {shop.totalResenas > 0 && (
+                      <View style={styles.shopCardMeta}>
+                        <Text style={styles.shopCardReviews}>
+                          {shop.totalResenas} reseñas
+                        </Text>
+                      </View>
+                    )}
                   </View>
                 </View>
-              </View>
-            ))}
-          </View>
+              ))}
+            </View>
+          )}
         </View>
 
         <View style={styles.ctaSection}>
-          <View style={styles.ctaIconWrap}>
+          {/* ──<View style={styles.ctaIconWrap}>
             <Ionicons
               name="cut"
               size={isSmallScreen ? 28 : 32}
               color="#C9A84C"
             />
-          </View>
+          </View>─── */}
           <Text style={styles.ctaTitle}>¿Eres dueño de una barbería?</Text>
           <Text style={styles.ctaSubtitle}>
             Únete a cientos de negocios que ya gestionan sus citas y clientes
-            con Barber System. Gratis por 30 días.
+            con Barber System.
           </Text>
           <View style={styles.ctaBtns}>
-            <TouchableOpacity
+            {/* ──  <TouchableOpacity
               style={styles.ctaBtnDark}
               onPress={() => navigation.navigate("Register")}
               activeOpacity={0.85}
             >
               <Ionicons name="storefront-outline" size={18} color="#C9A84C" />
               <Text style={styles.ctaBtnDarkText}>Registrar mi barbería</Text>
-            </TouchableOpacity>
+            </TouchableOpacity> ─── */}
             <TouchableOpacity
               style={styles.ctaBtnLight}
               onPress={handleWhatsApp}
@@ -468,7 +611,11 @@ const HomeScreen = ({ navigation }) => {
         <View style={styles.footer}>
           <View style={styles.footerTop}>
             <View style={styles.footerBrand}>
-              <Text style={styles.footerBrandName}>✂ BARBER SYSTEM</Text>
+              <Image
+                source={require("../../assets/Logo.png")}
+                style={styles.footerLogoImage}
+                resizeMode="contain"
+              />
               <Text style={styles.footerBrandDesc}>
                 La plataforma líder para conectar clientes con las mejores
                 barberías de México.
@@ -483,49 +630,12 @@ const HomeScreen = ({ navigation }) => {
                 )}
               </View>
             </View>
-
-            {!isSmallScreen && (
-              <>
-                <View style={styles.footerCol}>
-                  <Text style={styles.footerColTitle}>Plataforma</Text>
-                  {["Barberías", "Servicios", "Precios", "Promociones"].map(
-                    (l, i) => (
-                      <Text key={i} style={styles.footerLink}>
-                        {l}
-                      </Text>
-                    ),
-                  )}
-                </View>
-                <View style={styles.footerCol}>
-                  <Text style={styles.footerColTitle}>Empresa</Text>
-                  {["Nosotros", "Blog", "Carreras", "Prensa"].map((l, i) => (
-                    <Text key={i} style={styles.footerLink}>
-                      {l}
-                    </Text>
-                  ))}
-                </View>
-                <View style={styles.footerCol}>
-                  <Text style={styles.footerColTitle}>Legal</Text>
-                  {["Privacidad", "Términos", "Cookies"].map((l, i) => (
-                    <Text key={i} style={styles.footerLink}>
-                      {l}
-                    </Text>
-                  ))}
-                </View>
-              </>
-            )}
           </View>
 
           <View style={styles.footerBottom}>
             <Text style={styles.footerCopyright}>
               © 2026 Barber System. Todos los derechos reservados.
             </Text>
-            {!isSmallScreen && (
-              <View style={styles.footerBottomLinks}>
-                <Text style={styles.footerBottomLink}>Privacidad</Text>
-                <Text style={styles.footerBottomLink}>Términos</Text>
-              </View>
-            )}
           </View>
         </View>
       </ScrollView>

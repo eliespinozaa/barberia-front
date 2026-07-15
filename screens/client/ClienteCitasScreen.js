@@ -43,10 +43,12 @@ const construirPaginas = (total, actual) => {
 
 const ClienteCitasScreen = ({ navigation }) => {
   const { width } = useWindowDimensions();
-  const { theme } = useTheme();
+  const { theme, toggleTheme } = useTheme();
   const styles = createStyles(width, theme);
   const isDark = theme.mode === 'dark';
   const esMovil = width < 700;
+
+  const [dropdownVisible, setDropdownVisible] = useState(false);
 
   const [cargando, setCargando] = useState(true);
   const [procesando, setProcesando] = useState(false);
@@ -106,6 +108,12 @@ const ClienteCitasScreen = ({ navigation }) => {
 
   const handleResena = (cita) => {
     navigation.navigate('ClienteResenaScreen', { idCita: cita.id });
+  };
+
+  const handleLogout = async () => {
+    setDropdownVisible(false);
+    await tokenManager.clearAll();
+    navigation.replace('Home');
   };
 
   const ejecutarCancelacion = async () => {
@@ -191,22 +199,9 @@ const ClienteCitasScreen = ({ navigation }) => {
       <LoadingOverlay visible={procesando} message="Procesando..." />
 
       {/* ── Navbar ── */}
-      <View style={styles.navbar}>
-        <View style={styles.navLeft}>
-          <View style={styles.navLogoWrap}>
-            {barberia?.imagen ? (
-              <Image source={{ uri: barberia.imagen }} style={styles.navLogoImg} />
-            ) : (
-              <Ionicons name="cut" size={18} color="#C9A84C" />
-            )}
-          </View>
-          <Text style={styles.navBarberia}>{barberia?.nombre || 'Mi Barbería'}</Text>
-        </View>
-        <TouchableOpacity style={styles.navAvatar}>
-          <Ionicons name="person-outline" size={20} color="#FFFFFF" />
-        </TouchableOpacity>
-      </View>
+      
 
+     
       {/* ── Título + back + agregar ── */}
       <View style={styles.titleBar}>
         <TouchableOpacity style={styles.backBtn} onPress={() => navigation.goBack()}>

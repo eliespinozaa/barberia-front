@@ -1022,6 +1022,28 @@ export const citaAPI = {
     return { success: false, error: 'Error de conexión' };
   }
 },
+
+
+actualizar: async (idCita, payload) => {
+  try {
+    const token = await tokenManager.getToken();
+    const response = await fetch(`${API_CONFIG.URL}/citas/${idCita}`, {
+      method: 'PUT',
+      headers: {
+        'Content-Type': 'application/json',
+        ...(token && { Authorization: `Bearer ${token}` }),
+      },
+      body: JSON.stringify(payload),
+    });
+    const data = await response.json();
+    if (data?.code === 200) {
+      return { success: true, data: data.data };
+    }
+    return { success: false, error: data?.description || 'No se pudo actualizar la cita' };
+  } catch (error) {
+    return { success: false, error: 'Error de conexión' };
+  }
+},
 };
 
 

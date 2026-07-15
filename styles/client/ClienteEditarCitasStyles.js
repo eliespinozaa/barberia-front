@@ -8,6 +8,7 @@ const createStyles = (width, theme) => {
   const NAVBAR  = theme.colors.navBackground;
   const BG      = theme.colors.background;
   const BORDER  = theme.colors.border;
+  const WHITE   = theme.colors.text;
 const CARD_BG         = '#D9D9D9';
 const CARD_TEXT       = '#1A1A1A';
 const CARD_TEXT_MUTED = '#6B7280';
@@ -70,6 +71,40 @@ const OPTION_BORDER = 'rgba(0,0,0,0.06)';
       backgroundColor: 'rgba(255,255,255,0.12)',
       justifyContent:  'center',
       alignItems:      'center',
+    },
+
+    /* ── Dropdown del avatar (igual al de ClientHomeScreen), con backdrop ── */
+    dropdownBackdrop: {
+      position: 'absolute',
+      top:      0,
+      left:     0,
+      right:    0,
+      bottom:   0,
+      zIndex:   998,
+    },
+    dropdown: {
+      position:        'absolute',
+      top:             isSmall ? 58 : 66,
+      right:           isSmall ? 16 : 28,
+      backgroundColor: theme.colors.cardBackground,
+      borderRadius:    12,
+      paddingVertical: 8,
+      minWidth:        180,
+      zIndex:          999,
+      borderWidth:     1,
+      borderColor:     BORDER,
+      ...(isWeb && { boxShadow: '0px 8px 24px rgba(0,0,0,0.5)' }),
+    },
+    dropdownItem: {
+      flexDirection:     'row',
+      alignItems:        'center',
+      paddingVertical:   12,
+      paddingHorizontal: 16,
+      gap:               12,
+    },
+    dropdownText: {
+      color:    WHITE,
+      fontSize: 14,
     },
 
     /* ── Barra de título + back ── */
