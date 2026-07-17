@@ -36,11 +36,30 @@ const createStyles = (width, theme) => {
       borderBottomWidth: 1,
       borderBottomColor: BORDER,
       zIndex: 100,
+      position: "relative",
+    },
+
+    navLinks: {
+      position: "absolute",
+      left: 0,
+      right: 0,
+      flexDirection: "row",
+      gap: 28,
+      justifyContent: "center",
     },
     navLeft: {
       flexDirection: "row",
       alignItems: "center",
       gap: 10,
+      flex: 1,
+      minWidth: 0,
+    },
+
+    navBarberia: {
+      color: "#FFFFFF",
+      fontSize: isSmall ? 14 : 16,
+      fontWeight: "700",
+      flexShrink: 1,
     },
 
     navLogoWrap: {
@@ -60,14 +79,30 @@ const createStyles = (width, theme) => {
       height: "100%",
       borderRadius: 20,
     },
-    navBarberia: {
-      color: "#FFFFFF",
-      fontSize: isSmall ? 14 : 16,
-      fontWeight: "700",
-    },
-    navLinks: {
+
+    ratingPill: {
       flexDirection: "row",
-      gap: 28,
+      alignItems: "center",
+      gap: 4,
+      backgroundColor: "rgba(245,179,1,0.15)",
+      borderRadius: 999,
+      paddingVertical: 4,
+      paddingHorizontal: 10,
+      marginLeft: 4,
+      flexShrink: 0,
+    },
+
+    navRight: {
+      flexDirection: "row",
+      alignItems: "center",
+      gap: 8,
+      flexShrink: 0,
+      zIndex: 1,
+    },
+    ratingPillText: {
+      color: "#FFFFFF",
+      fontSize: 11,
+      fontWeight: "700",
     },
     navLink: {
       color: "rgba(255,255,255,0.6)",
@@ -78,11 +113,6 @@ const createStyles = (width, theme) => {
       color: "#FFFFFF",
       fontSize: 14,
       fontWeight: "700",
-    },
-    navRight: {
-      flexDirection: "row",
-      alignItems: "center",
-      gap: 8,
     },
     navIcon: {
       width: 36,
@@ -339,6 +369,20 @@ const createStyles = (width, theme) => {
     promoIconImg: {
       width: "100%",
       height: "100%",
+    },
+    videoPlaceholder: {
+      flex: 1,
+      backgroundColor: "#000",
+      justifyContent: "center",
+      alignItems: "center",
+      gap: 8,
+      paddingHorizontal: 16,
+    },
+    videoPlaceholderText: {
+      color: "rgba(255,255,255,0.6)",
+      fontSize: 12,
+      textAlign: "center",
+      fontWeight: "500",
     },
   });
 };

@@ -184,6 +184,20 @@ const createStyles = (width, theme) => {
       fontSize:   13,
       fontWeight: '700',
     },
+    btnIniciar: {
+      backgroundColor:   '#5AA9F7',
+      borderRadius:      20,
+      paddingVertical:   8,
+      paddingHorizontal: 24,
+      width:             '100%',
+      alignItems:        'center',
+      marginTop:         4,
+    },
+    btnIniciarText: {
+      color:      '#0B1014',
+      fontSize:   13,
+      fontWeight: '700',
+    },
     btnCancelar: {
       backgroundColor:   YELLOW_BG,
       borderRadius:      20,

@@ -56,6 +56,7 @@ const [formPago, setFormPago] = useState({ metodoPago: 'EFECTIVO', referencia: '
   const [subTabMembresia, setSubTabMembresia] = useState('Membresia'); // 'Membresia' | 'Historial de pagos'
   const [suscripcionDetalle, setSuscripcionDetalle] = useState(null);
   const [cambiandoEstadoSuscripcion, setCambiandoEstadoSuscripcion] = useState(false);
+const [creandoSuscripcion, setCreandoSuscripcion] = useState(false);
 
   const [pagos, setPagos] = useState([]);
   const [cargandoPagos, setCargandoPagos] = useState(false);
@@ -423,6 +424,42 @@ const [formPago, setFormPago] = useState({ metodoPago: 'EFECTIVO', referencia: '
   });
 };
 
+
+const handleCrearMembresia = async () => {
+  if (!barberia?.id) return;
+  setCreandoSuscripcion(true);
+  const res = await suscripcionAPI.crear(barberia.id);
+  setCreandoSuscripcion(false);
+
+  if (!res.success) {
+    setResultado({
+      visible: true,
+      type: 'error',
+      title: 'No se pudo crear',
+      message: res.error || 'Ocurrió un error al crear la membresía.',
+    });
+    return;
+  }
+
+  setSuscripcionDetalle(res.data);
+
+  setBarberia((prev) => ({
+    ...prev,
+    suscripcion: {
+      estado:     res.data.estado,
+      ultimoPago: formatearFecha(res.data.fechaInicio),
+      vence:      formatearFecha(res.data.fechaFin),
+    },
+  }));
+
+  setResultado({
+    visible: true,
+    type: 'success',
+    title: '¡Listo!',
+    message: 'La membresía se creó correctamente, con su primer pago pendiente.',
+  });
+};
+
   const isWeb = Platform.OS === 'web';
   const scrollRef = useRef(null);
   const [scrollX, setScrollX] = useState(0);
@@ -500,8 +537,9 @@ const formatearMonto = (monto) => {
 };
 
   const renderMembresia = () => {
-  const estado = suscripcionDetalle?.estado; // 'ACTIVA' | 'VENCIDA' | 'SUSPENDIDA'
+  const estado = suscripcionDetalle?.estado; // 'ACTIVA' | 'VENCIDA' | 'SUSPENDIDA' | undefined
   const esActiva = estado === 'ACTIVA';
+  const sinSuscripcion = !suscripcionDetalle;
 
   return (
     <View>
@@ -527,10 +565,25 @@ const formatearMonto = (monto) => {
         ))}
       </View>
 
-     
-
       <View style={subTabMembresia === 'Membresia' ? styles.membresiaSectionCard : undefined}>
   {subTabMembresia === 'Membresia' ? (
+          sinSuscripcion ? (
+            <View style={styles.membresiaCard}>
+              <Ionicons
+                name="card-outline"
+                size={36}
+                color={theme.mode === 'dark' ? 'rgba(255,255,255,0.3)' : 'rgba(0,0,0,0.25)'}
+                style={{ marginBottom: 12 }}
+              />
+              <Text style={styles.membresiaCardTitle}>SIN MEMBRESÍA</Text>
+              <Text style={[styles.membresiaFechaValor, { marginBottom: 20, textAlign: 'center' }]}>
+                Esta barbería aún no tiene una suscripción registrada.
+              </Text>
+              <TouchableOpacity style={styles.membresiaBtnReactivar} onPress={handleCrearMembresia}>
+                <Text style={styles.membresiaBtnText}>Crear membresía</Text>
+              </TouchableOpacity>
+            </View>
+          ) : (
           <View style={styles.membresiaCard}>
             <Text style={styles.membresiaCardTitle}>
               {esActiva ? 'MEMBRESIA ACTIVA' : estado === 'SUSPENDIDA' ? 'MEMBRESIA SUSPENDIDA' : 'MEMBRESIA VENCIDA'}
@@ -583,6 +636,7 @@ const formatearMonto = (monto) => {
               </TouchableOpacity>
             </View>
           </View>
+          )
         ) : (
           <View style={styles.pagosListContainer}>
             {pagos.length === 0 ? (
@@ -1012,7 +1066,9 @@ const formatearMonto = (monto) => {
       <LoadingOverlay visible={cargandoServicios} message="Cargando servicios..." />
       <LoadingOverlay visible={eliminandoServicio} message="Eliminando servicio..." />
       <LoadingOverlay visible={cargandoPagos} message="Cargando pagos..." />
-      <LoadingOverlay visible={cambiandoEstadoSuscripcion} message="Actualizando membresía..." />
+
+      <LoadingOverlay visible={creandoSuscripcion} message="Creando membresía..." />
+<LoadingOverlay visible={cambiandoEstadoSuscripcion} message="Actualizando membresía..." />
 
       <ResultModal
         visible={resultado.visible}

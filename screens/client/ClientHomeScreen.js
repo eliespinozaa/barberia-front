@@ -12,6 +12,7 @@ import {
 import { SafeAreaView } from "react-native-safe-area-context";
 import { Ionicons } from "@expo/vector-icons";
 import { useFocusEffect } from "@react-navigation/native";
+import BottomNavClient from "../../components/cliente/BottomNavClient";
 import createStyles from "../../styles/client/ClientHomeStyles";
 import {
   tokenManager,
@@ -118,7 +119,11 @@ const ClientHomeScreen = ({ route, navigation }) => {
               c.estado !== "CANCELADA" &&
               c.estado !== "COMPLETADA",
           )
-          .sort((a, b) => a.fecha.localeCompare(b.fecha));
+          .sort((a, b) => {
+            const fechaHoraA = `${a.fecha} ${a.horaInicio}`;
+            const fechaHoraB = `${b.fecha} ${b.horaInicio}`;
+            return fechaHoraA.localeCompare(fechaHoraB);
+          });
         setProximaCita(futuras[0] ?? null);
       }
     } catch (e) {
@@ -136,13 +141,13 @@ const ClientHomeScreen = ({ route, navigation }) => {
   );
 
   const handleLogout = async () => {
-  setDropdownVisible(false);
-  await tokenManager.clearAll();
-  navigation.reset({
-    index: 0,
-    routes: [{ name: 'Home' }],
-  });
-};
+    setDropdownVisible(false);
+    await tokenManager.clearAll();
+    navigation.reset({
+      index: 0,
+      routes: [{ name: "Home" }],
+    });
+  };
 
   const abrirEnMaps = () => {
     if (!barberia?.direccion) return;
@@ -164,7 +169,7 @@ const ClientHomeScreen = ({ route, navigation }) => {
 
       {/* ── Navbar ── */}
       <View style={styles.navbar}>
-        <View style={styles.navLeft}>
+        <View style={styles.navLeft} pointerEvents="box-none">
           <View style={styles.navLogoWrap}>
             {barberia?.imagen ? (
               <Image
@@ -175,9 +180,22 @@ const ClientHomeScreen = ({ route, navigation }) => {
               <Ionicons name="cut" size={18} color="#C9A84C" />
             )}
           </View>
-          <Text style={styles.navBarberia}>
+          <Text
+            style={styles.navBarberia}
+            numberOfLines={1}
+            ellipsizeMode="tail"
+          >
             {barberia?.nombre || "Mi Barbería"}
           </Text>
+          {width >= 375 && (
+            <TouchableOpacity
+              style={styles.ratingPill}
+              onPress={() => navigation.navigate("ClienteResenasScreen")}
+            >
+              <Ionicons name="star" size={12} color="#F5B301" />
+              <Text style={styles.ratingPillText}>Reseñas</Text>
+            </TouchableOpacity>
+          )}
         </View>
 
         {width >= 768 && (
@@ -200,6 +218,14 @@ const ClientHomeScreen = ({ route, navigation }) => {
               }}
             >
               <Text style={styles.navLink}>Mis citas</Text>
+            </TouchableOpacity>
+            <TouchableOpacity
+              onPress={() => {
+                setDropdownVisible(false);
+                navigation.navigate("ClienteResenasScreen");
+              }}
+            >
+              <Text style={styles.navLink}>Reseñas</Text>
             </TouchableOpacity>
           </View>
         )}
@@ -303,7 +329,12 @@ const ClientHomeScreen = ({ route, navigation }) => {
         {/* ── Hero: video + tarjeta de ubicación ── */}
         <View style={styles.heroRow}>
           <View style={styles.heroVideo}>
-            <View style={styles.videoPlaceholder} />
+            <View style={styles.videoPlaceholder}>
+              <Ionicons name="videocam-outline" size={28} color="#C9A84C" />
+              <Text style={styles.videoPlaceholderText}>
+                Próximamente: video de nuestra barbería
+              </Text>
+            </View>
           </View>
           <View style={styles.heroMap}>
             <TouchableOpacity
@@ -401,35 +432,11 @@ const ClientHomeScreen = ({ route, navigation }) => {
 
       {/* ── Bottom nav (móvil) ── */}
       {width < 768 && (
-        <View style={styles.bottomNav}>
-          <TouchableOpacity style={styles.bottomNavItem}>
-            <Ionicons name="home-outline" size={22} color="#C9A84C" />
-            <Text style={[styles.bottomNavText, { color: "#C9A84C" }]}>
-              Inicio
-            </Text>
-          </TouchableOpacity>
-          <TouchableOpacity
-            style={styles.bottomNavItem}
-            onPress={() => navigation.navigate("ClienteAgendarCitaScreen")}
-          >
-            <Ionicons name="calendar-outline" size={22} color="#888" />
-            <Text style={styles.bottomNavText}>Agendar</Text>
-          </TouchableOpacity>
-          <TouchableOpacity
-            style={styles.bottomNavItem}
-            onPress={() => navigation.navigate("ClienteCitasScreen")}
-          >
-            <Ionicons name="time-outline" size={22} color="#888" />
-            <Text style={styles.bottomNavText}>Mis citas</Text>
-          </TouchableOpacity>
-          <TouchableOpacity
-            style={styles.bottomNavItem}
-            onPress={() => navigation.navigate("PerfilScreen")}
-          >
-            <Ionicons name="person-outline" size={22} color="#888" />
-            <Text style={styles.bottomNavText}>Perfil</Text>
-          </TouchableOpacity>
-        </View>
+        <BottomNavClient
+          navigation={navigation}
+          active="Inicio"
+          styles={styles}
+        />
       )}
     </SafeAreaView>
   );

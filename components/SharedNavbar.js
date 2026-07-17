@@ -40,11 +40,13 @@ const SharedNavbar = ({ navigation, currentScreen }) => {
   const SURFACE = theme.colors.surface;
   const TEXT_SECONDARY = theme.colors.textSecondary;
   const NAV_TEXT = theme.colors.navText;
+  const CARD_BG = theme.colors.cardBackground;
 
   const styles = buildStyles({
     isSmallScreen,
     isLargeScreen,
     isDesktop,
+    isWeb,
     NAV_BG,
     GOLD,
     WHITE,
@@ -52,6 +54,7 @@ const SharedNavbar = ({ navigation, currentScreen }) => {
     SURFACE,
     TEXT_SECONDARY,
     NAV_TEXT,
+    CARD_BG,
   });
 
   const links = [];
@@ -65,109 +68,161 @@ const SharedNavbar = ({ navigation, currentScreen }) => {
   };
 
   return (
-    <View style={styles.navbar}>
-      {/* ── Logo / Brand ─────────────────────────────────────────────── */}
-      <TouchableOpacity style={styles.brand} onPress={() => handleNav("Home")}>
-        <View style={styles.logoPlaceholder}>
-          <Image
-            source={require("../assets/Logo.png")}
-            style={styles.navLogoImage}
-            resizeMode="contain"
-          />
-        </View>
-        <Text style={styles.brandName}>BARBER SYSTEM</Text>
-      </TouchableOpacity>
-
-      {/* ── Links desktop ────────────────────────────────────────────── */}
-      {isDesktop && (
-        <View style={styles.navLinks}>
-          {links.map((l) => (
-            <NavLink
-              key={l.screen}
-              label={l.label}
-              active={currentScreen === l.screen}
-              onPress={() => handleNav(l.screen)}
-              styles={styles}
+    <View>
+      <View style={styles.navbar}>
+        {/* ── Logo / Brand ─────────────────────────────────────────────── */}
+        <TouchableOpacity
+          style={styles.brand}
+          onPress={() => handleNav("Home")}
+        >
+          <View style={styles.logoPlaceholder}>
+            <Image
+              source={require("../assets/Logo.png")}
+              style={styles.navLogoImage}
+              resizeMode="contain"
             />
-          ))}
-        </View>
-      )}
-
-      {/* ── Acciones ─────────────────────────────────────────────────── */}
-      <View style={styles.navActions}>
-        {/* Toggle tema oscuro/claro */}
-        <TouchableOpacity onPress={toggleTheme} style={styles.iconButton}>
-          <Ionicons
-            name={isDarkMode ? "sunny-outline" : "moon-outline"}
-            size={20}
-            color={GOLD}
-          />
+          </View>
+          <Text style={styles.brandName} numberOfLines={1} ellipsizeMode="tail">
+            BARBER SYSTEM
+          </Text>
         </TouchableOpacity>
 
-        {isDesktop ? (
-          <>
-            <TouchableOpacity
-              style={styles.btnOutline}
-              onPress={() => handleNav("Login")}
-            >
-              <Text style={styles.btnOutlineText}>Iniciar sesión</Text>
-            </TouchableOpacity>
-            <TouchableOpacity
-              style={styles.btnSolid}
-              onPress={() => handleNav("Register")}
-            >
-              <Text style={styles.btnSolidText}>Registrarse</Text>
-            </TouchableOpacity>
-          </>
-        ) : (
-          <TouchableOpacity
-            style={styles.iconButton}
-            onPress={() => setMenuOpen(!menuOpen)}
-          >
-            <Ionicons
-              name={menuOpen ? "close" : "menu"}
-              size={26}
-              color={GOLD}
-            />
-          </TouchableOpacity>
+        {/* ── Links desktop ────────────────────────────────────────────── */}
+        {isDesktop && (
+          <View style={styles.navLinks}>
+            {links.map((l) => (
+              <NavLink
+                key={l.screen}
+                label={l.label}
+                active={currentScreen === l.screen}
+                onPress={() => handleNav(l.screen)}
+                styles={styles}
+              />
+            ))}
+          </View>
         )}
+
+        {/* ── Acciones ─────────────────────────────────────────────────── */}
+        <View style={styles.navActions}>
+          {/* Toggle tema oscuro/claro: SOLO visible en desktop */}
+          {isDesktop && (
+            <TouchableOpacity onPress={toggleTheme} style={styles.iconButton}>
+              <Ionicons
+                name={isDarkMode ? "sunny-outline" : "moon-outline"}
+                size={20}
+                color={GOLD}
+              />
+            </TouchableOpacity>
+          )}
+
+          {isDesktop ? (
+            <>
+              <TouchableOpacity
+                style={styles.btnOutline}
+                onPress={() => handleNav("Login")}
+              >
+                <Text style={styles.btnOutlineText}>Iniciar sesión</Text>
+              </TouchableOpacity>
+              <TouchableOpacity
+                style={styles.btnSolid}
+                onPress={() => handleNav("Register")}
+              >
+                <Text style={styles.btnSolidText}>Registrarse</Text>
+              </TouchableOpacity>
+            </>
+          ) : (
+            <TouchableOpacity
+              style={[styles.iconButton, menuOpen && styles.iconButtonActive]}
+              onPress={() => setMenuOpen(!menuOpen)}
+            >
+              <Ionicons
+                name={menuOpen ? "close" : "menu"}
+                size={24}
+                color={menuOpen ? "#1A1A1A" : GOLD}
+              />
+            </TouchableOpacity>
+          )}
+        </View>
       </View>
 
-      {/* ── Menú móvil / tablet ──────────────────────────────────────── */}
+      {/* ── Menú móvil / tablet: empuja el contenido, con más estilo ──── */}
       {menuOpen && !isDesktop && (
         <View style={styles.mobileMenu}>
-          {links.map((l) => (
-            <TouchableOpacity
-              key={l.screen}
-              style={styles.mobileMenuItem}
-              onPress={() => handleNav(l.screen)}
-            >
-              <Text
-                style={[
-                  styles.mobileMenuText,
-                  currentScreen === l.screen && styles.navLinkActive,
-                ]}
+          {/* Links de navegación, si los hay */}
+          {links.map((l) => {
+            const active = currentScreen === l.screen;
+            return (
+              <TouchableOpacity
+                key={l.screen}
+                style={[styles.mobileRow, active && styles.mobileRowActive]}
+                onPress={() => handleNav(l.screen)}
               >
-                {l.label}
-              </Text>
+                <View
+                  style={[
+                    styles.mobileRowIcon,
+                    active && styles.mobileRowIconActive,
+                  ]}
+                >
+                  <Ionicons
+                    name={l.icon || "chevron-forward-outline"}
+                    size={17}
+                    color={active ? "#1A1A1A" : GOLD}
+                  />
+                </View>
+                <Text
+                  style={[
+                    styles.mobileRowText,
+                    active && styles.mobileRowTextActive,
+                  ]}
+                >
+                  {l.label}
+                </Text>
+                <Ionicons
+                  name="chevron-forward"
+                  size={16}
+                  color={active ? "#1A1A1A" : "rgba(255,255,255,0.25)"}
+                />
+              </TouchableOpacity>
+            );
+          })}
+
+          {/* Toggle de tema, misma fila con ícono */}
+          <TouchableOpacity style={styles.mobileRow} onPress={toggleTheme}>
+            <View style={styles.mobileRowIcon}>
+              <Ionicons
+                name={isDarkMode ? "sunny-outline" : "moon-outline"}
+                size={17}
+                color={GOLD}
+              />
+            </View>
+            <Text style={styles.mobileRowText}>
+              {isDarkMode ? "Modo claro" : "Modo oscuro"}
+            </Text>
+            <Ionicons
+              name="chevron-forward"
+              size={16}
+              color="rgba(255,255,255,0.25)"
+            />
+          </TouchableOpacity>
+
+          {/* ── CTAs ── */}
+          <View style={styles.mobileCtas}>
+            <TouchableOpacity
+              style={styles.mobileBtnOutline}
+              onPress={() => handleNav("Login")}
+            >
+              <Ionicons name="log-in-outline" size={17} color={GOLD} />
+              <Text style={styles.mobileBtnOutlineText}>Iniciar sesión</Text>
             </TouchableOpacity>
-          ))}
 
-          <View style={styles.mobileMenuDivider} />
-
-          <TouchableOpacity
-            style={styles.mobileMenuItem}
-            onPress={() => handleNav("Login")}
-          >
-            <Text style={styles.mobileMenuTextGold}>Iniciar sesión</Text>
-          </TouchableOpacity>
-
-          <TouchableOpacity
-            style={[styles.mobileMenuItem, styles.mobileMenuSolid]}
-            onPress={() => handleNav("Register")}
-          >
-            <Text style={styles.btnSolidText}>Registrarse</Text>
-          </TouchableOpacity>
+            <TouchableOpacity
+              style={styles.mobileBtnSolid}
+              onPress={() => handleNav("Register")}
+            >
+              <Ionicons name="person-add-outline" size={17} color="#1A1A1A" />
+              <Text style={styles.btnSolidText}>Crear cuenta gratis</Text>
+            </TouchableOpacity>
+          </View>
         </View>
       )}
     </View>
@@ -179,12 +234,14 @@ const buildStyles = ({
   isSmallScreen,
   isLargeScreen,
   isDesktop,
+  isWeb,
   NAV_BG,
   GOLD,
   WHITE,
   BORDER,
   TEXT_SECONDARY,
   NAV_TEXT,
+  CARD_BG,
 }) =>
   StyleSheet.create({
     navbar: {
@@ -192,30 +249,32 @@ const buildStyles = ({
       alignItems: "center",
       justifyContent: "space-between",
       backgroundColor: NAV_BG,
-      paddingHorizontal: isSmallScreen ? 16 : isLargeScreen ? 40 : 24,
-      paddingVertical: isSmallScreen ? 12 : 16,
+      paddingHorizontal: isSmallScreen ? 14 : isLargeScreen ? 40 : 24,
+      paddingVertical: isSmallScreen ? 10 : 16,
       borderBottomWidth: 1,
       borderBottomColor: BORDER,
       zIndex: 100,
-      flexWrap: "wrap",
     },
 
     // ── Brand ──────────────────────────────────────────────────────────────
     brand: {
       flexDirection: "row",
       alignItems: "center",
+      flex: 1,
+      minWidth: 0,
     },
     logoPlaceholder: {
-      width: isSmallScreen ? 32 : 36,
-      height: isSmallScreen ? 32 : 36,
-      borderRadius: isSmallScreen ? 16 : 18,
+      width: isSmallScreen ? 28 : 36,
+      height: isSmallScreen ? 28 : 36,
+      borderRadius: isSmallScreen ? 14 : 18,
       backgroundColor: "rgba(201,168,76,0.12)",
       justifyContent: "center",
       alignItems: "center",
       borderWidth: 1,
       borderColor: GOLD,
-      marginRight: 10,
+      marginRight: isSmallScreen ? 8 : 10,
       overflow: "hidden",
+      flexShrink: 0,
     },
     navLogoImage: {
       width: "100%",
@@ -223,9 +282,10 @@ const buildStyles = ({
     },
     brandName: {
       color: NAV_TEXT,
-      fontSize: isSmallScreen ? 14 : isLargeScreen ? 18 : 15,
+      fontSize: isSmallScreen ? 13 : isLargeScreen ? 18 : 15,
       fontWeight: "800",
-      letterSpacing: 1.5,
+      letterSpacing: isSmallScreen ? 0.8 : 1.5,
+      flexShrink: 1,
     },
 
     // ── Links desktop ──────────────────────────────────────────────────────
@@ -261,14 +321,19 @@ const buildStyles = ({
     navActions: {
       flexDirection: "row",
       alignItems: "center",
+      flexShrink: 0,
     },
     iconButton: {
-      padding: 8,
+      padding: isSmallScreen ? 6 : 8,
       borderRadius: 8,
       backgroundColor: "rgba(201,168,76,0.1)",
-      marginLeft: 8,
+      marginLeft: isSmallScreen ? 4 : 8,
       borderWidth: 1,
       borderColor: "rgba(201,168,76,0.2)",
+    },
+    iconButtonActive: {
+      backgroundColor: GOLD,
+      borderColor: GOLD,
     },
     btnOutline: {
       paddingHorizontal: isLargeScreen ? 16 : 12,
@@ -294,44 +359,83 @@ const buildStyles = ({
       color: "#1A1A1A",
       fontSize: isLargeScreen ? 13 : 12,
       fontWeight: "700",
+      marginLeft: 6,
     },
 
-    // ── Menú móvil ─────────────────────────────────────────────────────────
+    // ── Menú móvil: empuja el contenido, estilo "app moderna" ──────────────
     mobileMenu: {
       width: "100%",
       backgroundColor: NAV_BG,
-      borderTopWidth: 1,
-      borderTopColor: BORDER,
-      paddingVertical: 8,
-      marginTop: 8,
+      borderBottomWidth: 1,
+      borderBottomColor: BORDER,
+      paddingHorizontal: isSmallScreen ? 14 : 24,
+      paddingTop: 12,
+      paddingBottom: 18,
+      gap: 6,
+      ...(isWeb && { boxShadow: "0px 6px 16px rgba(0,0,0,0.15)" }),
     },
-    mobileMenuItem: {
-      paddingHorizontal: isSmallScreen ? 16 : 20,
-      paddingVertical: isSmallScreen ? 12 : 14,
+
+    // Cada fila del menú: ícono en circulito + texto + chevron
+    mobileRow: {
+      flexDirection: "row",
+      alignItems: "center",
+      paddingVertical: 11,
+      paddingHorizontal: 10,
+      borderRadius: 12,
+      gap: 12,
     },
-    mobileMenuText: {
+    mobileRowActive: {
+      backgroundColor: GOLD,
+    },
+    mobileRowIcon: {
+      width: 30,
+      height: 30,
+      borderRadius: 15,
+      backgroundColor: "rgba(201,168,76,0.12)",
+      justifyContent: "center",
+      alignItems: "center",
+    },
+    mobileRowIconActive: {
+      backgroundColor: "rgba(0,0,0,0.12)",
+    },
+    mobileRowText: {
+      flex: 1,
       color: WHITE,
-      fontSize: isSmallScreen ? 14 : 15,
-      fontWeight: "500",
-    },
-    mobileMenuTextGold: {
-      color: GOLD,
-      fontSize: isSmallScreen ? 14 : 15,
+      fontSize: 14,
       fontWeight: "600",
     },
-    mobileMenuDivider: {
-      height: 1,
-      backgroundColor: BORDER,
-      marginHorizontal: isSmallScreen ? 16 : 20,
-      marginVertical: 8,
+    mobileRowTextActive: {
+      color: "#1A1A1A",
     },
-    mobileMenuSolid: {
-      marginHorizontal: isSmallScreen ? 16 : 20,
-      marginTop: 4,
-      marginBottom: 8,
-      backgroundColor: GOLD,
-      borderRadius: 8,
+
+    // Bloque de botones al final: outline + solid, uno debajo del otro,
+    // grandes y con buen padding para que se sientan "importantes"
+    mobileCtas: {
+      marginTop: 10,
+      gap: 10,
+    },
+    mobileBtnOutline: {
+      flexDirection: "row",
       alignItems: "center",
+      justifyContent: "center",
+      gap: 8,
+      borderWidth: 1.5,
+      borderColor: GOLD,
+      borderRadius: 12,
+      paddingVertical: 13,
+    },
+    mobileBtnOutlineText: {
+      color: GOLD,
+      fontSize: 14,
+      fontWeight: "700",
+    },
+    mobileBtnSolid: {
+      flexDirection: "row",
+      alignItems: "center",
+      justifyContent: "center",
+      backgroundColor: GOLD,
+      borderRadius: 12,
+      paddingVertical: 13,
     },
   });
 

@@ -1,4 +1,4 @@
-import React, { useState, useCallback } from 'react';
+import React, { useState, useCallback, useEffect  } from 'react';
 import {
   View,
   Text,
@@ -128,8 +128,8 @@ function Calendario({ selected, onSelect, styles }) {
   );
 }
 
-// ── Tarjeta de una cita (el barbero no confirma/cancela, solo finaliza si está en curso) ──
-const CitaCard = ({ cita, styles, onFinalizar, enCurso }) => {
+// ── Tarjeta de una cita ──
+ const CitaCard = ({ cita, styles, onFinalizar, onConfirmar, onCancelar, enCurso }) => {
   const finalizada = cita.estado === 'CANCELADA' || cita.estado === 'COMPLETADA';
 
   return (
@@ -141,19 +141,27 @@ const CitaCard = ({ cita, styles, onFinalizar, enCurso }) => {
       <Text style={styles.citaHora}>{cita.hora}</Text>
       <Text style={styles.citaNombre}>{cita.nombreCliente}</Text>
       <Text style={styles.citaServicio}>{cita.servicio}</Text>
-      <Text style={styles.citaPrecio}>$ {cita.precio}</Text>
+      <Text style={styles.citaPrecio}>$ {cita.precio?.parsedValue ?? cita.precio}</Text>
 
       {enCurso ? (
         <TouchableOpacity style={styles.btnFinalizar} onPress={() => onFinalizar(cita.id)}>
           <Text style={styles.btnFinalizarText}>Finalizar</Text>
         </TouchableOpacity>
-      ) : (
+      ) : finalizada ? (
         <Text style={styles.citaEstadoBadge}>
-          {cita.estado === 'CANCELADA' ? 'Cancelada'
-            : cita.estado === 'COMPLETADA' ? 'Completada'
-            : cita.estado === 'CONFIRMADA' ? 'Confirmada'
-            : 'Pendiente'}
+          {cita.estado === 'CANCELADA' ? 'Cancelada' : 'Completada'}
         </Text>
+      ) : (
+        <>
+          {cita.estado === 'PENDIENTE' && (
+            <TouchableOpacity style={styles.btnConfirmar} onPress={() => onConfirmar(cita.id)}>
+              <Text style={styles.btnConfirmarText}>Confirmar</Text>
+            </TouchableOpacity>
+          )}
+          <TouchableOpacity style={styles.btnCancelar} onPress={() => onCancelar(cita.id)}>
+            <Text style={styles.btnCancelarText}>Cancelar</Text>
+          </TouchableOpacity>
+        </>
       )}
     </View>
   );
@@ -176,6 +184,7 @@ const BarberCitasScreen = ({ navigation }) => {
   const [procesando, setProcesando] = useState(false);
   const [error, setError] = useState(null);
 
+  
   const cargarCitas = useCallback(async (fecha) => {
     setCargando(true);
     setError(null);
@@ -209,6 +218,18 @@ const BarberCitasScreen = ({ navigation }) => {
     setCargando(false);
   }, [barbero]);
 
+
+  useEffect(() => {
+    if (tab !== 'hoy') return;
+
+    const intervalo = setInterval(() => {
+      cargarCitas(new Date());
+    }, 300000); // cada 60 segundos
+
+    return () => clearInterval(intervalo);
+  }, [tab, cargarCitas]);
+
+
   useFocusEffect(
     useCallback(() => {
       if (tab === 'hoy') {
@@ -238,24 +259,55 @@ const BarberCitasScreen = ({ navigation }) => {
     cargarCitas(new Date(fechaObj.year, fechaObj.month, fechaObj.day));
   };
 
+const recargarTabActual = () => {
+    if (tab === 'hoy') cargarCitas(new Date());
+    else if (tab === 'manana') {
+      const mañana = new Date();
+      mañana.setDate(mañana.getDate() + 1);
+      cargarCitas(mañana);
+    } else if (fechaSeleccionada) {
+      cargarCitas(new Date(fechaSeleccionada.year, fechaSeleccionada.month, fechaSeleccionada.day));
+    }
+  };
+
   const handleFinalizar = async (idCita) => {
     setProcesando(true);
     const res = await citaAPI.finalizar(idCita);
     setProcesando(false);
 
     if (res.success) {
-      if (tab === 'hoy') cargarCitas(new Date());
-      else if (tab === 'manana') {
-        const mañana = new Date();
-        mañana.setDate(mañana.getDate() + 1);
-        cargarCitas(mañana);
-      } else if (fechaSeleccionada) {
-        cargarCitas(new Date(fechaSeleccionada.year, fechaSeleccionada.month, fechaSeleccionada.day));
-      }
+      recargarTabActual();
     } else {
       Alert.alert('Error', res.error || 'No se pudo finalizar la cita');
     }
   };
+
+  const handleCancelar = async (idCita) => {
+    setProcesando(true);
+    const res = await citaAPI.cancelar(idCita);
+    setProcesando(false);
+
+    if (res.success) {
+      recargarTabActual();
+    } else {
+      Alert.alert('Error', res.error || 'No se pudo cancelar la cita');
+    }
+  };
+
+
+  const handleConfirmar = async (idCita) => {
+    setProcesando(true);
+    const res = await citaAPI.confirmar(idCita);
+    setProcesando(false);
+
+    if (res.success) {
+      recargarTabActual();
+    } else {
+      Alert.alert('Error', res.error || 'No se pudo confirmar la cita');
+    }
+  };
+
+ 
 
   const citaEnCurso = citas.find((c) => c.estado === 'EN_PROCESO');
   const siguientesCitas = citas.filter((c) => c.estado !== 'EN_PROCESO');
@@ -351,7 +403,13 @@ const BarberCitasScreen = ({ navigation }) => {
             ) : (
               <View style={styles.citasGrid}>
                 {siguientesCitas.map((cita) => (
-                  <CitaCard key={cita.id} cita={cita} styles={styles} />
+                  <CitaCard
+                    key={cita.id}
+                    cita={cita}
+                    styles={styles}
+                    onConfirmar={handleConfirmar}
+                    onCancelar={handleCancelar}
+                  />
                 ))}
               </View>
             )}

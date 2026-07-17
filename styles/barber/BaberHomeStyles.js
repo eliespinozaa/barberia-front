@@ -32,6 +32,22 @@ const createStyles = (width, theme) => {
       flexDirection: "row",
       alignItems: "center",
       gap: 12,
+      flex: 1,
+      minWidth: 0,
+    },
+
+    navTitle: {
+      color: "#FFFFFF",
+      fontSize: isSmall ? 18 : 22,
+      fontWeight: "600",
+      flexShrink: 1,
+    },
+
+    navRight: {
+      flexDirection: "row",
+      alignItems: "center",
+      gap: 14,
+      flexShrink: 0,
     },
     navLogoWrap: {
       width: 40,
@@ -47,16 +63,6 @@ const createStyles = (width, theme) => {
     navLogoImage: {
       width: "100%",
       height: "100%",
-    },
-    navTitle: {
-      color: "#FFFFFF",
-      fontSize: isSmall ? 18 : 22,
-      fontWeight: "600",
-    },
-    navRight: {
-      flexDirection: "row",
-      alignItems: "center",
-      gap: 14,
     },
     navIcon: {
       width: 36,
@@ -150,6 +156,9 @@ const createStyles = (width, theme) => {
       justifyContent: "space-between",
     },
     drawerItem: {
+      flexDirection: "row",
+      alignItems: "center",
+      gap: 12,
       paddingVertical: 14,
     },
     drawerText: {
@@ -203,10 +212,12 @@ const createStyles = (width, theme) => {
     statItem: {
       flexGrow: 1,
       minWidth: isSmall ? "45%" : 140,
+      alignItems: "center",
     },
     statHeaderRow: {
       flexDirection: "row",
       alignItems: "center",
+      justifyContent: "center",
       gap: 6,
       marginBottom: 8,
     },
@@ -214,11 +225,13 @@ const createStyles = (width, theme) => {
       color: WHITE,
       fontSize: 13,
       fontWeight: "600",
+      textAlign: "center",
     },
     statValue: {
       color: WHITE,
       fontSize: 18,
       fontWeight: "400",
+      textAlign: "center",
     },
 
     /* ── Sección título ── */
@@ -275,19 +288,31 @@ const createStyles = (width, theme) => {
       fontWeight: "600",
     },
 
-    /* ── Dropdown ── */
+    /* ── Dropdown ── */ /* ── Dropdown ── */
+    dropdownOverlay: {
+      position: "absolute",
+      top: 0,
+      left: 0,
+      right: 0,
+      bottom: 0,
+      zIndex: 998,
+    },
     dropdown: {
       position: "absolute",
       top: isSmall ? 78 : 92,
       right: isSmall ? 16 : 24,
-      backgroundColor: "#0B1014",
+      backgroundColor: isDark ? "#0B1014" : "#FFFFFF",
       borderRadius: 12,
       paddingVertical: 8,
       minWidth: 180,
       zIndex: 999,
       borderWidth: 1,
-      borderColor: "rgba(255,255,255,0.08)",
-      ...(isWeb && { boxShadow: "0px 8px 24px rgba(0,0,0,0.5)" }),
+      borderColor: isDark ? "rgba(255,255,255,0.08)" : "rgba(0,0,0,0.08)",
+      ...(isWeb && {
+        boxShadow: isDark
+          ? "0px 8px 24px rgba(0,0,0,0.5)"
+          : "0px 8px 24px rgba(0,0,0,0.15)",
+      }),
     },
     dropdownItem: {
       flexDirection: "row",
@@ -297,7 +322,7 @@ const createStyles = (width, theme) => {
       gap: 12,
     },
     dropdownText: {
-      color: "#FFFFFF",
+      color: WHITE,
       fontSize: 14,
     },
   });

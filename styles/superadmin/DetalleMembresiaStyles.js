@@ -176,6 +176,37 @@ const CANCEL_BORDER = isDark ? 'rgba(255,255,255,0.3)' : 'rgba(0,0,0,0.2)';
       paddingVertical: 12,
       alignItems:      'center',
     },
+
+
+    membresiaCard: {
+      alignItems: 'center',
+      paddingVertical: 8,
+    },
+    membresiaCardTitle: {
+      color:        WHITE,
+      fontSize:     18,
+      fontWeight:   '800',
+      marginBottom: 18,
+      letterSpacing: 0.3,
+    },
+    membresiaFechaValor: {
+      color:    MUTED,
+      fontSize: 14,
+      fontWeight: '500',
+    },
+    membresiaBtnReactivar: {
+      backgroundColor:   BTN_BG,
+      borderRadius:      20,
+      paddingVertical:   10,
+      paddingHorizontal: 18,
+      alignItems:        'center',
+    },
+    membresiaBtnText: {
+      color:      WHITE,
+      fontSize:   13,
+      fontWeight: '700',
+    },
+
     actionBtnText: { color: WHITE, fontSize: 13, fontWeight: '700' },
 
     /* ── Historial de pagos — mismo estilo que DetalleBarberiaStyles ── */

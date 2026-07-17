@@ -19,21 +19,58 @@ export default API_CONFIG;
 const TOKEN_KEY = '@barber_token';
 const USER_KEY  = '@barber_user';
 
+const decodificarJWT = (token) => {
+  try {
+    const payload = token.split('.')[1];
+    const json = decodeURIComponent(
+      atob(payload.replace(/-/g, '+').replace(/_/g, '/'))
+        .split('')
+        .map((c) => '%' + c.charCodeAt(0).toString(16).padStart(2, '0'))
+        .join('')
+    );
+    return JSON.parse(json);
+  } catch (e) {
+    return null;
+  }
+};
+
+const tokenExpirado = (token) => {
+  const payload = decodificarJWT(token);
+  if (!payload?.exp) return true; 
+  const ahoraEnSegundos = Math.floor(Date.now() / 1000);
+  return payload.exp < ahoraEnSegundos;
+};
+
 export const tokenManager = {
   saveToken: async (token, user) => {
     await AsyncStorage.setItem(TOKEN_KEY, token);
     await AsyncStorage.setItem(USER_KEY, JSON.stringify(user));
   },
   getToken: async () => {
-    return await AsyncStorage.getItem(TOKEN_KEY);
+    const token = await AsyncStorage.getItem(TOKEN_KEY);
+    if (!token) return null;
+
+    if (tokenExpirado(token)) {
+      await AsyncStorage.removeItem(TOKEN_KEY);
+      await AsyncStorage.removeItem(USER_KEY);
+      return null;
+    }
+
+    return token;
   },
   getUser: async () => {
+    const tokenValido = await tokenManager.getToken();
+    if (!tokenValido) return null;
+
     const data = await AsyncStorage.getItem(USER_KEY);
     return data ? JSON.parse(data) : null;
   },
   getUserData: async () => {
-    const data = await AsyncStorage.getItem(USER_KEY);
-    return data ? JSON.parse(data) : null;
+    return await tokenManager.getUser();
+  },
+  sesionValida: async () => {
+    const token = await tokenManager.getToken();
+    return !!token;
   },
   clearToken: async () => {
     await AsyncStorage.removeItem(TOKEN_KEY);
@@ -115,6 +152,28 @@ export const authAPI = {
       };
     } catch (error) {
       return { success: false, message: 'Error de conexión con el servidor' };
+    }
+  },
+
+   forgotPassword: async (correo) => {
+    try {
+      const response = await fetch(`${API_CONFIG.URL}/auth/forgot-password`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ correo }),
+      });
+      const data = await response.json();
+
+      if (data?.code === 200) {
+        return { success: true, data: data.data };
+      }
+
+      return {
+        success: false,
+        error: data?.description || 'No se pudo procesar la solicitud',
+      };
+    } catch (error) {
+      return { success: false, error: 'Error de conexión con el servidor' };
     }
   },
 
@@ -558,6 +617,33 @@ export const suscripcionAPI = {
         return { success: true, data: data.data };
       }
       return { success: false, error: data?.description };
+
+    } catch (error) {
+      return { success: false, error: 'Error de conexión' };
+    }
+  },
+
+  crear: async (idBarberia) => {
+    try {
+      const token = await tokenManager.getToken();
+
+      const response = await fetch(
+        `${API_CONFIG.URL}/suscripciones/barberia/${idBarberia}`,
+        {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            ...(token && { Authorization: `Bearer ${token}` }),
+          },
+        }
+      );
+
+      const data = await response.json();
+
+      if (data?.code === 200) {
+        return { success: true, data: data.data };
+      }
+      return { success: false, error: data?.description || 'No se pudo crear la membresía' };
 
     } catch (error) {
       return { success: false, error: 'Error de conexión' };
@@ -1189,6 +1275,47 @@ export const resenaAPI = {
         return { success: true, data: data.data };
       }
       return { success: false, error: data?.description || 'No se pudo obtener el resumen' };
+    } catch (error) {
+      return { success: false, error: 'Error de conexión' };
+    }
+  },
+
+  existePorCita: async (idCita) => {
+    try {
+      const token = await tokenManager.getToken();
+      const response = await fetch(`${API_CONFIG.URL}/resenas/cita/${idCita}/existe`, {
+        method: 'GET',
+        headers: {
+          'Content-Type': 'application/json',
+          ...(token && { Authorization: `Bearer ${token}` }),
+        },
+      });
+      const data = await response.json();
+      if (data?.code === 200) {
+        return { success: true, data: data.data };
+      }
+      return { success: false, error: data?.description || 'No se pudo verificar la reseña' };
+    } catch (error) {
+      return { success: false, error: 'Error de conexión' };
+    }
+  },
+
+  crear: async (payload) => {
+    try {
+      const token = await tokenManager.getToken();
+      const response = await fetch(`${API_CONFIG.URL}/resenas`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          ...(token && { Authorization: `Bearer ${token}` }),
+        },
+        body: JSON.stringify(payload),
+      });
+      const data = await response.json();
+      if (data?.code === 200 || data?.code === 201) {
+        return { success: true, data: data.data };
+      }
+      return { success: false, error: data?.description || 'No se pudo enviar la reseña' };
     } catch (error) {
       return { success: false, error: 'Error de conexión' };
     }

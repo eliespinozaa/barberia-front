@@ -31,6 +31,22 @@ const createStyles = (width, theme) => {
       flexDirection: "row",
       alignItems: "center",
       gap: 12,
+      flex: 1,
+      minWidth: 0,
+    },
+
+    navTitle: {
+      color: "#FFFFFF",
+      fontSize: isSmall ? 18 : 22,
+      fontWeight: "600",
+      flexShrink: 1,
+    },
+
+    navRight: {
+      flexDirection: "row",
+      alignItems: "center",
+      gap: 14,
+      flexShrink: 0,
     },
 
     navLogoWrap: {
@@ -45,16 +61,6 @@ const createStyles = (width, theme) => {
     navLogoImage: {
       width: 32,
       height: 32,
-    },
-    navTitle: {
-      color: "#FFFFFF",
-      fontSize: isSmall ? 18 : 22,
-      fontWeight: "600",
-    },
-    navRight: {
-      flexDirection: "row",
-      alignItems: "center",
-      gap: 14,
     },
     navIcon: {
       width: 36,
@@ -138,13 +144,21 @@ const createStyles = (width, theme) => {
       bottom: 0,
       width: 260,
       backgroundColor: SIDEBAR_BG,
-      paddingTop: 60,
       paddingHorizontal: 20,
       zIndex: 600,
       justifyContent: "space-between",
     },
+    drawerItems: {
+      marginTop: 40,
+      flexGrow: 0,
+    },
     drawerItem: {
-      paddingVertical: 14,
+      flexDirection: "row",
+      alignItems: "center",
+      gap: 14,
+      paddingVertical: 13,
+      paddingHorizontal: 8,
+      borderRadius: 12,
     },
     drawerText: {
       color: MUTED,
@@ -154,6 +168,7 @@ const createStyles = (width, theme) => {
     drawerTextActive: {
       color: WHITE,
     },
+
     drawerClose: {
       position: "absolute",
       top: 16,
@@ -189,10 +204,12 @@ const createStyles = (width, theme) => {
     statItem: {
       flexGrow: 1,
       minWidth: isSmall ? "45%" : 140,
+      justifyContent: "center",
     },
     statHeaderRow: {
       flexDirection: "row",
       alignItems: "center",
+      justifyContent: "center",
       gap: 6,
       marginBottom: 8,
     },
@@ -200,11 +217,14 @@ const createStyles = (width, theme) => {
       color: WHITE,
       fontSize: 13,
       fontWeight: "600",
+      textAlign: "center",
     },
     statValue: {
       color: WHITE,
       fontSize: 18,
       fontWeight: "400",
+      textAlign: "center",
+      width: "100%",
     },
 
     sectionTitle: {
@@ -217,9 +237,10 @@ const createStyles = (width, theme) => {
     accesoCard: {
       backgroundColor: ACCESO_BG,
       borderRadius: 50,
-      padding: 10,
-      marginBottom: 10,
-      ...(!isDark && isWeb && { boxShadow: "0px 2px 8px rgba(0,0,0,0.08)" }),
+      paddingVertical: 16,
+      paddingHorizontal: 22,
+      marginBottom: 12,
+      ...(!isDark && isWeb && { boxShadow: "0px 2px 8px rgba(0,0,0,0.07)" }),
     },
     accesoTitulo: {
       color: WHITE,
@@ -256,6 +277,14 @@ const createStyles = (width, theme) => {
     dropdownText: {
       color: "#FFFFFF",
       fontSize: 14,
+    },
+    dropdownOverlay: {
+      position: "absolute",
+      top: 0,
+      left: 0,
+      right: 0,
+      bottom: 0,
+      zIndex: 998,
     },
   });
 };

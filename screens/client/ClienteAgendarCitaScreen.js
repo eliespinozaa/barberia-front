@@ -14,7 +14,10 @@ import {
   useWindowDimensions,
   Platform,
 } from "react-native";
-import { SafeAreaView } from "react-native-safe-area-context";
+import {
+  SafeAreaView,
+  useSafeAreaInsets,
+} from "react-native-safe-area-context";
 import { Ionicons } from "@expo/vector-icons";
 import { useFocusEffect } from "@react-navigation/native";
 import { useTheme } from "../../context/ThemeContext";
@@ -159,6 +162,8 @@ const ClienteAgendarCitaScreen = ({ navigation, route }) => {
   const [cargando, setCargando] = useState(true);
   const [barberia, setBarberia] = useState(null);
   const [servicios, setServicios] = useState([]);
+  const insets = useSafeAreaInsets();
+  const isSmall = width < 768;
 
   const [confirmando, setConfirmando] = useState(false);
 
@@ -440,8 +445,6 @@ const ClienteAgendarCitaScreen = ({ navigation, route }) => {
     >
       <LoadingOverlay visible={cargando} message="Cargando servicios..." />
       <LoadingOverlay visible={confirmando} message="Agendando tu cita..." />
-
-    
 
       {/* ── Título + back ── */}
       <View style={styles.titleBar}>
@@ -775,7 +778,11 @@ const ClienteAgendarCitaScreen = ({ navigation, route }) => {
 
       {/* ── FAB siguiente ── */}
       <TouchableOpacity
-        style={[styles.fabNext, !puedeAvanzar && { opacity: 0.4 }]}
+        style={[
+          styles.fabNext,
+          { bottom: (isSmall ? 16 : 28) + insets.bottom }, // 👈 nuevo
+          !puedeAvanzar && { opacity: 0.4 },
+        ]}
         onPress={handleSiguiente}
         disabled={!puedeAvanzar}
       >

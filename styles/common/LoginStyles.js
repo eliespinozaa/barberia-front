@@ -199,8 +199,9 @@ const createStyles = (theme) =>
       paddingVertical: 2,
     },
     forgotText: {
-      color: theme.colors.textMuted,
+      color: "#C9A84C",
       fontSize: isSmallScreen ? 12 : 13,
+      fontWeight: "600",
       textDecorationLine: "underline",
     },
 
@@ -242,7 +243,52 @@ const createStyles = (theme) =>
     logoImage: {
       width: "100%",
       height: "100%",
-      borderRadius: isSmallScreen ? 35 : isMediumScreen ? 40 : 45, 
+      borderRadius: isSmallScreen ? 35 : isMediumScreen ? 40 : 45,
+    },
+
+
+
+    /* ── Modal recuperar contraseña ── */
+    modalOverlay: {
+      flex: 1,
+      backgroundColor: "rgba(0,0,0,0.6)",
+      justifyContent: "center",
+      alignItems: "center",
+      padding: 20,
+    },
+    modalCard: {
+      width: "100%",
+      maxWidth: 400,
+      backgroundColor: "#F5F5F5",
+      borderRadius: 12,
+      padding: 20,
+    },
+    modalHeader: {
+      flexDirection: "row",
+      justifyContent: "space-between",
+      alignItems: "center",
+      marginBottom: 8,
+    },
+    modalTitle: {
+      fontSize: 17,
+      fontWeight: "700",
+      color: "#1A1A1A",
+    },
+    modalSubtitle: {
+      fontSize: 13,
+      color: "#666",
+      marginBottom: 16,
+      lineHeight: 18,
+    },
+    modalInput: {
+      color: "#000",
+      fontSize: 14,
+    },
+    modalMsg: {
+      fontSize: 12,
+      color: "#2E7D32",
+      marginBottom: 12,
+      lineHeight: 17,
     },
   });
 

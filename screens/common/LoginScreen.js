@@ -10,6 +10,7 @@ import {
   KeyboardAvoidingView,
   ScrollView,
   Image,
+  Modal,
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { Ionicons } from "@expo/vector-icons";
@@ -24,6 +25,12 @@ const LoginScreen = ({ navigation }) => {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
 
+  // ── Nuevo: estado del modal de recuperación ──
+  const [forgotVisible, setForgotVisible] = useState(false);
+  const [forgotEmail, setForgotEmail] = useState("");
+  const [forgotLoading, setForgotLoading] = useState(false);
+  const [forgotMsg, setForgotMsg] = useState("");
+
   const fadeAnim = useRef(new Animated.Value(0)).current;
   const slideAnim = useRef(new Animated.Value(40)).current;
   const spinAnim = useRef(new Animated.Value(0)).current;
@@ -32,7 +39,6 @@ const LoginScreen = ({ navigation }) => {
   const { theme } = useTheme();
   const styles = createStyles(theme);
 
-  /* ── Verificar sesión activa + animación de entrada ── */
   useEffect(() => {
     const check = async () => {
       const token = await tokenManager.getToken();
@@ -88,7 +94,6 @@ const LoginScreen = ({ navigation }) => {
     ]).start();
   };
 
-  /* ── Login ── */
   const handleLogin = async () => {
     setError("");
     if (!email || !password) {
@@ -129,7 +134,29 @@ const LoginScreen = ({ navigation }) => {
     }
   };
 
-  /* ── Render ── */
+  const handleForgotPassword = async () => {
+  if (!forgotEmail) {
+    setForgotMsg("Escribe tu correo electrónico");
+    return;
+  }
+  setForgotLoading(true);
+  setForgotMsg("");
+
+  const res = await authAPI.forgotPassword(forgotEmail);
+
+  setForgotLoading(false);
+
+  setForgotMsg(
+    "Si el correo existe, te enviamos un enlace para restablecer tu contraseña. Revisa tu bandeja de entrada (y spam)."
+  );
+};
+
+  const closeForgotModal = () => {
+    setForgotVisible(false);
+    setForgotEmail("");
+    setForgotMsg("");
+  };
+
   return (
     <SafeAreaView
       style={styles.container}
@@ -144,7 +171,6 @@ const LoginScreen = ({ navigation }) => {
           keyboardShouldPersistTaps="handled"
           showsVerticalScrollIndicator={false}
         >
-          {/* Botón Atrás */}
           <TouchableOpacity
             style={styles.back}
             onPress={() => navigation.navigate("Home")}
@@ -155,10 +181,8 @@ const LoginScreen = ({ navigation }) => {
           </TouchableOpacity>
 
           <View style={styles.centerWrapper}>
-            {/* ── Header (fuera de la tarjeta, igual que Register) ── */}
             <View style={styles.header}>
               <Text style={styles.greeting}>Hola, Bienvenido a</Text>
-
               <View style={styles.logoWrap}>
                 <View style={styles.logoPlaceholder}>
                   <Image
@@ -171,7 +195,6 @@ const LoginScreen = ({ navigation }) => {
               <Text style={styles.title}>Inicia Sesión</Text>
             </View>
 
-            {/* ── Tarjeta ── */}
             <Animated.View
               style={[
                 styles.card,
@@ -184,7 +207,6 @@ const LoginScreen = ({ navigation }) => {
                 },
               ]}
             >
-              {/* Error */}
               {!!error && (
                 <View style={styles.errorBox}>
                   <Ionicons
@@ -196,23 +218,26 @@ const LoginScreen = ({ navigation }) => {
                 </View>
               )}
 
-              {/* Campo correo */}
               <View style={styles.fieldGroup}>
                 <Text style={styles.label}>Correo</Text>
                 <View style={styles.inputRow}>
                   <TextInput
                     style={styles.input}
-                    placeholder="tu@correo.com"
+                    placeholder="Correo electrónico"
                     placeholderTextColor="#999"
                     keyboardType="email-address"
                     autoCapitalize="none"
+                    autoComplete="email"
+                    textContentType="emailAddress"
                     value={email}
-                    onChangeText={setEmail}
+                    onChangeText={(t) => {
+                      setEmail(t);
+                      if (error) setError("");
+                    }}
                   />
                 </View>
               </View>
 
-              {/* Campo contraseña */}
               <View style={styles.fieldGroup}>
                 <Text style={styles.label}>Contraseña</Text>
                 <View style={styles.inputRow}>
@@ -221,8 +246,13 @@ const LoginScreen = ({ navigation }) => {
                     placeholder="••••••••"
                     placeholderTextColor="#999"
                     secureTextEntry={!showPass}
+                    autoComplete="password"
+                    textContentType="password"
                     value={password}
-                    onChangeText={setPassword}
+                    onChangeText={(t) => {
+                      setPassword(t);
+                      if (error) setError("");
+                    }}
                     onSubmitEditing={handleLogin}
                   />
                   <TouchableOpacity
@@ -238,7 +268,6 @@ const LoginScreen = ({ navigation }) => {
                 </View>
               </View>
 
-              {/* Botón */}
               <TouchableOpacity
                 style={[styles.btn, loading && styles.btnLoading]}
                 onPress={handleLogin}
@@ -255,14 +284,66 @@ const LoginScreen = ({ navigation }) => {
                 </Text>
               </TouchableOpacity>
 
-              {/* Olvidé contraseña */}
-              <TouchableOpacity style={styles.forgot}>
+              {/* ── Ahora sí conectado ── */}
+              <TouchableOpacity
+                style={styles.forgot}
+                onPress={() => setForgotVisible(true)}
+              >
                 <Text style={styles.forgotText}>¿Olvidaste tu contraseña?</Text>
               </TouchableOpacity>
             </Animated.View>
           </View>
         </ScrollView>
       </KeyboardAvoidingView>
+
+      {/* ── Modal: recuperar contraseña ── */}
+      <Modal
+        visible={forgotVisible}
+        transparent
+        animationType="fade"
+        onRequestClose={closeForgotModal}
+      >
+        <View style={styles.modalOverlay}>
+          <View style={styles.modalCard}>
+            <View style={styles.modalHeader}>
+              <Text style={styles.modalTitle}>Recuperar contraseña</Text>
+              <TouchableOpacity onPress={closeForgotModal}>
+                <Ionicons name="close" size={22} color="#333" />
+              </TouchableOpacity>
+            </View>
+
+            <Text style={styles.modalSubtitle}>
+              Escribe tu correo y te enviaremos un enlace para crear una nueva
+              contraseña.
+            </Text>
+
+            <View style={styles.fieldGroup}>
+              <TextInput
+                style={[styles.inputRow, styles.modalInput]}
+                placeholder="Correo electrónico"
+                placeholderTextColor="#999"
+                keyboardType="email-address"
+                autoCapitalize="none"
+                value={forgotEmail}
+                onChangeText={setForgotEmail}
+              />
+            </View>
+
+            {!!forgotMsg && <Text style={styles.modalMsg}>{forgotMsg}</Text>}
+
+            <TouchableOpacity
+              style={[styles.btn, forgotLoading && styles.btnLoading]}
+              onPress={handleForgotPassword}
+              disabled={forgotLoading}
+              activeOpacity={0.85}
+            >
+              <Text style={styles.btnText}>
+                {forgotLoading ? "Enviando..." : "Enviar enlace"}
+              </Text>
+            </TouchableOpacity>
+          </View>
+        </View>
+      </Modal>
     </SafeAreaView>
   );
 };

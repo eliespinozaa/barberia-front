@@ -611,11 +611,11 @@ const HomeScreen = ({ navigation }) => {
         <View style={styles.footer}>
           <View style={styles.footerTop}>
             <View style={styles.footerBrand}>
-              <Image
+               {/* ──<Image
                 source={require("../../assets/Logo.png")}
                 style={styles.footerLogoImage}
                 resizeMode="contain"
-              />
+              /> ─── */}
               <Text style={styles.footerBrandDesc}>
                 La plataforma líder para conectar clientes con las mejores
                 barberías de México.

@@ -1,17 +1,24 @@
 import React, { useState, useCallback } from "react";
 
 import { View, Text, ScrollView, TouchableOpacity, Image } from "react-native";
-
-import { useFocusEffect } from "@react-navigation/native";
-import { tokenManager, barberoAPI, citaAPI, barberiaAPI } from "../../config/api";
-import { SafeAreaView } from "react-native-safe-area-context";
+import { useFocusEffect, useRoute } from "@react-navigation/native";
+import {
+  tokenManager,
+  barberoAPI,
+  citaAPI,
+  barberiaAPI,
+} from "../../config/api";
+import {
+  SafeAreaView,
+  useSafeAreaInsets,
+} from "react-native-safe-area-context";
 import { Ionicons } from "@expo/vector-icons";
 import { useWindowDimensions } from "react-native";
 import { useTheme } from "../../context/ThemeContext";
 import createStyles from "../../styles/barber/BaberHomeStyles";
 
 const SIDEBAR_ITEMS = [
-  { label: "Inicio", icon: "home-outline", active: true, screen: null },
+  { label: "Inicio", icon: "home-outline", screen: "BarberHomeScreen" },
   { label: "Citas", icon: "calendar-outline", screen: "BarberCitasScreen" },
   { label: "Horario", icon: "time-outline", screen: "BarberHorariosScreen" },
   { label: "Reseñas", icon: "star-outline", screen: "BarberResenasScreen" },
@@ -28,11 +35,14 @@ const ESTADO_LABELS = {
 const BarberHomeScreen = ({ navigation }) => {
   const { width } = useWindowDimensions();
   const { theme, toggleTheme } = useTheme();
+
+  const iconColor = theme.mode === "dark" ? "#FFFFFF" : "#1A1A1A";
   const styles = createStyles(width, theme);
   const isLarge = width >= 1024;
   const [dropdownVisible, setDropdownVisible] = useState(false);
   const [drawerVisible, setDrawerVisible] = useState(false);
-
+  const route = useRoute();
+  const insets = useSafeAreaInsets();
   const [barberiaInfo, setBarberiaInfo] = useState(null);
 
   const [cargando, setCargando] = useState(true);
@@ -135,7 +145,10 @@ const BarberHomeScreen = ({ navigation }) => {
   const handleLogout = async () => {
     setDropdownVisible(false);
     await tokenManager.clearAll();
-    navigation.replace("Home");
+    navigation.reset({
+      index: 0,
+      routes: [{ name: "Home" }],
+    });
   };
 
   return (
@@ -165,7 +178,7 @@ const BarberHomeScreen = ({ navigation }) => {
               <Ionicons name="cut" size={20} color="#C9A84C" />
             )}
           </View>
-          <Text style={styles.navTitle}>
+          <Text style={styles.navTitle} numberOfLines={1} ellipsizeMode="tail">
             {barberiaInfo?.nombre || "Classic Barber"}
           </Text>
         </View>
@@ -184,29 +197,42 @@ const BarberHomeScreen = ({ navigation }) => {
 
       {/* ── Dropdown perfil ── */}
       {dropdownVisible && (
-        <View style={styles.dropdown}>
+        <>
           <TouchableOpacity
-            style={styles.dropdownItem}
+            style={styles.dropdownOverlay}
+            activeOpacity={1}
             onPress={() => setDropdownVisible(false)}
-          >
-            <Ionicons name="person-outline" size={18} color="#FFFFFF" />
-            <Text style={styles.dropdownText}>Mi Perfil</Text>
-          </TouchableOpacity>
-          <TouchableOpacity
-            style={styles.dropdownItem}
-            onPress={() => {
-              toggleTheme();
-              setDropdownVisible(false);
-            }}
-          >
-            <Ionicons name="moon-outline" size={18} color="#FFFFFF" />
-            <Text style={styles.dropdownText}>Modo Oscuro</Text>
-          </TouchableOpacity>
-          <TouchableOpacity style={styles.dropdownItem} onPress={handleLogout}>
-            <Ionicons name="log-out-outline" size={18} color="#FFFFFF" />
-            <Text style={styles.dropdownText}>Cerrar Sesión</Text>
-          </TouchableOpacity>
-        </View>
+          />
+          <View style={styles.dropdown}>
+            <TouchableOpacity
+              style={styles.dropdownItem}
+              onPress={() => {
+                setDropdownVisible(false);
+                navigation.navigate("PerfilScreen");
+              }}
+            >
+              <Ionicons name="person-outline" size={18} color={iconColor} />
+              <Text style={styles.dropdownText}>Mi Perfil</Text>
+            </TouchableOpacity>
+            <TouchableOpacity
+              style={styles.dropdownItem}
+              onPress={() => {
+                toggleTheme();
+                setDropdownVisible(false);
+              }}
+            >
+              <Ionicons name="moon-outline" size={18} color={iconColor} />
+              <Text style={styles.dropdownText}>Modo Oscuro</Text>
+            </TouchableOpacity>
+            <TouchableOpacity
+              style={styles.dropdownItem}
+              onPress={handleLogout}
+            >
+              <Ionicons name="log-out-outline" size={18} color={iconColor} />
+              <Text style={styles.dropdownText}>Cerrar Sesión</Text>
+            </TouchableOpacity>
+          </View>
+        </>
       )}
 
       {/* ── Drawer móvil ── */}
@@ -222,31 +248,38 @@ const BarberHomeScreen = ({ navigation }) => {
               style={styles.drawerClose}
               onPress={() => setDrawerVisible(false)}
             >
-              <Ionicons name="close-outline" size={26} color="#FFFFFF" />
+              <Ionicons name="close-outline" size={26} color={iconColor} />
             </TouchableOpacity>
             <View>
-              {SIDEBAR_ITEMS.map((item) => (
-                <TouchableOpacity
-                  key={item.label}
-                  style={styles.drawerItem}
-                  onPress={() => {
-                    setDrawerVisible(false);
-                    irA(item.screen);
-                  }}
-                >
-                  <Text
-                    style={[
-                      styles.drawerText,
-                      item.active && styles.drawerTextActive,
-                    ]}
+              {SIDEBAR_ITEMS.map((item) => {
+                const isActive = item.screen === route.name;
+                return (
+                  <TouchableOpacity
+                    key={item.label}
+                    style={styles.drawerItem}
+                    onPress={() => {
+                      setDrawerVisible(false);
+                      irA(item.screen);
+                    }}
                   >
-                    {item.label}
-                  </Text>
-                </TouchableOpacity>
-              ))}
+                    <Ionicons name={item.icon} size={20} color={iconColor} />
+                    <Text
+                      style={[
+                        styles.drawerText,
+                        isActive && styles.drawerTextActive,
+                      ]}
+                    >
+                      {item.label}
+                    </Text>
+                  </TouchableOpacity>
+                );
+              })}
             </View>
-            <TouchableOpacity style={styles.logoutBtn} onPress={handleLogout}>
-              <Ionicons name="log-out-outline" size={18} color="#FFFFFF" />
+            <TouchableOpacity
+              style={[styles.logoutBtn, { marginBottom: insets.bottom + 12 }]}
+              onPress={handleLogout}
+            >
+              <Ionicons name="log-out-outline" size={18} color={iconColor} />
               <Text style={styles.logoutText}>Cerrar Sesión</Text>
             </TouchableOpacity>
           </View>
@@ -258,25 +291,28 @@ const BarberHomeScreen = ({ navigation }) => {
         {isLarge && (
           <View style={styles.sidebar}>
             <View style={styles.sidebarItems}>
-              {SIDEBAR_ITEMS.map((item) => (
-                <TouchableOpacity
-                  key={item.label}
-                  style={styles.sidebarItem}
-                  onPress={() => irA(item.screen)}
-                >
-                  <Text
-                    style={[
-                      styles.sidebarText,
-                      item.active && styles.sidebarTextActive,
-                    ]}
+              {SIDEBAR_ITEMS.map((item) => {
+                const isActive = item.screen === route.name;
+                return (
+                  <TouchableOpacity
+                    key={item.label}
+                    style={styles.sidebarItem}
+                    onPress={() => irA(item.screen)}
                   >
-                    {item.label}
-                  </Text>
-                </TouchableOpacity>
-              ))}
+                    <Text
+                      style={[
+                        styles.sidebarText,
+                        isActive && styles.sidebarTextActive,
+                      ]}
+                    >
+                      {item.label}
+                    </Text>
+                  </TouchableOpacity>
+                );
+              })}
             </View>
             <TouchableOpacity style={styles.logoutBtn} onPress={handleLogout}>
-              <Ionicons name="log-out-outline" size={18} color="#FFFFFF" />
+              <Ionicons name="log-out-outline" size={18} color={iconColor} />
               <Text style={styles.logoutText}>Cerrar Sesión</Text>
             </TouchableOpacity>
           </View>

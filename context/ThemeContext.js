@@ -1,5 +1,6 @@
 import React, { createContext, useState, useContext, useEffect } from 'react';
 import AsyncStorage from '@react-native-async-storage/async-storage';
+import { useColorScheme, Appearance } from 'react-native';
 
 const ThemeContext = createContext();
 
@@ -103,8 +104,10 @@ navText: '#FFFFFF',
   }
 };
 
+
 export const ThemeProvider = ({ children }) => {
-  const [isDarkMode, setIsDarkMode] = useState(true);
+  const systemScheme = useColorScheme(); // 'dark' | 'light' | null
+  const [modoManual, setModoManual] = useState(null); // null = sigue al sistema
   const [isLoading, setIsLoading] = useState(true);
 
   useEffect(() => {
@@ -114,8 +117,10 @@ export const ThemeProvider = ({ children }) => {
   const loadTheme = async () => {
     try {
       const savedTheme = await AsyncStorage.getItem('@barber_theme');
-      if (savedTheme !== null) {
-        setIsDarkMode(savedTheme === 'dark');
+      // Si el usuario ya había elegido manualmente antes, respeta eso.
+      // Si nunca eligió (null), se queda en modoManual = null → sigue al celular.
+      if (savedTheme === 'dark' || savedTheme === 'light') {
+        setModoManual(savedTheme);
       }
     } catch (error) {
       console.error('Error loading theme:', error);
@@ -124,20 +129,28 @@ export const ThemeProvider = ({ children }) => {
     }
   };
 
+  const isDarkMode = (modoManual ?? systemScheme ?? 'light') === 'dark';
+
   const toggleTheme = async () => {
     try {
-      const newMode = !isDarkMode;
-      setIsDarkMode(newMode);
-      await AsyncStorage.setItem('@barber_theme', newMode ? 'dark' : 'light');
+      const newMode = isDarkMode ? 'light' : 'dark';
+      setModoManual(newMode); // a partir de aquí ya no sigue al sistema
+      await AsyncStorage.setItem('@barber_theme', newMode);
     } catch (error) {
       console.error('Error saving theme:', error);
     }
   };
 
+  // Botón opcional para volver a "automático" (seguir al celular)
+  const usarTemaAutomatico = async () => {
+    setModoManual(null);
+    await AsyncStorage.removeItem('@barber_theme');
+  };
+
   const theme = isDarkMode ? darkTheme : lightTheme;
 
   return (
-    <ThemeContext.Provider value={{ theme, isDarkMode, toggleTheme, isLoading }}>
+    <ThemeContext.Provider value={{ theme, isDarkMode, toggleTheme, usarTemaAutomatico, isLoading }}>
       {children}
     </ThemeContext.Provider>
   );
