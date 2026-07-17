@@ -19,16 +19,13 @@ const createStyles = (theme) => {
     },
 
     iconWrap: {
-      width: 96,
-      height: 96,
-      borderRadius: 48,
+      width: 112,
+      height: 112,
+      borderRadius: 56,
       backgroundColor: isDark ? "#1A1A1A" : "#FFFFFF",
-      borderWidth: 2,
-      borderColor: "#C9A84C",
       justifyContent: "center",
       alignItems: "center",
       marginBottom: 32,
-      overflow: "hidden",
       ...(isDark
         ? {}
         : {
@@ -39,10 +36,23 @@ const createStyles = (theme) => {
           }),
     },
 
-    logoSpinImage: {
-      width: "70%",
-      height: "70%",
+    /* ── Anillo giratorio (spinner tipo "arco dorado") ── */
+    spinnerRing: {
+      position: "absolute",
+      width: 112,
+      height: 112,
+      borderRadius: 56,
+      borderWidth: 3,
+      borderColor: "transparent",
+      borderTopColor: "#C9A84C",
+      borderRightColor: "rgba(201,168,76,0.25)",
     },
+
+    logoImage: {
+      width: "62%",
+      height: "62%",
+    },
+
     title: {
       fontSize: 24,
       fontWeight: "900",
@@ -59,24 +69,21 @@ const createStyles = (theme) => {
     subtitle: {
       fontSize: 14,
       color: isDark ? "rgba(255,255,255,0.45)" : "rgba(0,0,0,0.55)",
-      marginBottom: 32,
+      marginBottom: 28,
       textAlign: "center",
     },
 
-    progressBg: {
-      width: "100%",
-      height: 4,
-      backgroundColor: isDark
-        ? "rgba(201,168,76,0.2)"
-        : "rgba(201,168,76,0.15)",
-      borderRadius: 2,
-      overflow: "hidden",
+    /* ── Puntitos rebotando ── */
+    dotsRow: {
+      flexDirection: "row",
+      gap: 8,
     },
 
-    progressFill: {
-      height: "100%",
+    dot: {
+      width: 8,
+      height: 8,
+      borderRadius: 4,
       backgroundColor: "#C9A84C",
-      borderRadius: 2,
     },
   });
 };
